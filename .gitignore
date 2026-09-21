@@ -1,0 +1,10 @@
+# Product requirements documents
+prd_hom.md
+PRD_HOMR.md
+
+# npm dependencies
+node_modules/
+
+# Local build output and npm logs
+dist/
+*.log
