@@ -180,53 +180,46 @@ export function App() {
     <div className="app-shell">
       <a className="skip-link" href="#main">Lewati ke konten</a>
 
-      <div className="topbar-wrapper">
-        <header className="topbar">
-          <a className="brand-link" href="#top" aria-label="HOUSD, kembali ke atas">
-            <Wordmark />
-          </a>
-          <div className="topbar-status" aria-hidden="true">
-            <span className="status-dot" />
-            BNB Testnet
-            <span className="topbar-divider">·</span>
-            <span className="topbar-demo">LIVE v1.0</span>
-          </div>
-          <div className="topbar-actions">
-            <button className="cmd-button" type="button" aria-label="Buka command bar">
-              <span>Command bar</span>
-              <span className="cmd-keys">
-                <Kbd>⌘</Kbd>
-                <Kbd>K</Kbd>
-              </span>
-            </button>
-            <button
-              className="menu-button"
-              type="button"
-              aria-expanded={menuOpen}
-              aria-controls="site-nav"
-              onClick={() => setMenuOpen((value) => !value)}
-            >
-              <span>{menuOpen ? 'Tutup' : 'Menu'}</span>
-            </button>
-            <nav
-              id="site-nav"
-              className={menuOpen ? 'nav-links is-open' : 'nav-links'}
-              aria-label="Navigasi utama"
-            >
-              <a href="#cara-kerja" onClick={() => setMenuOpen(false)}>Cara kerja</a>
-              <a href="#demo" onClick={() => setMenuOpen(false)}>Demo</a>
-              <a href="#transparansi" onClick={() => setMenuOpen(false)}>Transparansi</a>
-              <a href="#risiko" onClick={() => setMenuOpen(false)}>Risiko</a>
-            </nav>
-            <button className="cta-button" type="button" onClick={() => setDialogOpen(true)}>
-              Mulai demo
-            </button>
-          </div>
-        </header>
-      </div>
-
       <main id="main">
         <section className="hero" id="top" aria-labelledby="hero-title">
+          <div className="topbar-wrapper">
+            <header className="topbar">
+              <a className="brand-link" href="#top" aria-label="HOUSD, kembali ke atas">
+                <Wordmark />
+              </a>
+              <div className="topbar-status" aria-hidden="true">
+                <span className="status-dot" />
+                BNB Testnet
+                <span className="topbar-divider">·</span>
+                <span className="topbar-demo">LIVE v1.0</span>
+              </div>
+              <div className="topbar-actions">
+                <button
+                  className="menu-button"
+                  type="button"
+                  aria-expanded={menuOpen}
+                  aria-controls="site-nav"
+                  onClick={() => setMenuOpen((value) => !value)}
+                >
+                  <span>{menuOpen ? 'Tutup' : 'Menu'}</span>
+                </button>
+                <nav
+                  id="site-nav"
+                  className={menuOpen ? 'nav-links is-open' : 'nav-links'}
+                  aria-label="Navigasi utama"
+                >
+                  <a href="#cara-kerja" onClick={() => setMenuOpen(false)}>Cara kerja</a>
+                  <a href="#demo" onClick={() => setMenuOpen(false)}>Demo</a>
+                  <a href="#transparansi" onClick={() => setMenuOpen(false)}>Transparansi</a>
+                  <a href="#risiko" onClick={() => setMenuOpen(false)}>Risiko</a>
+                </nav>
+                <button className="cta-button" type="button" onClick={() => setDialogOpen(true)}>
+                  Mulai demo
+                </button>
+              </div>
+            </header>
+          </div>
+
           <div className="hero-eyebrow">
             <span className="eyebrow-mark" />
             <span>Live · Housing credit market · Indonesia</span>

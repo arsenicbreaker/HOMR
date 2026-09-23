@@ -142,6 +142,7 @@ a:focus-visible,
   display: flex;
   justify-content: center;
   padding: 0 16px;
+  margin-bottom: 40px;
   pointer-events: none;
 }
 
@@ -200,23 +201,6 @@ a:focus-visible,
   gap: 16px;
   justify-self: end;
 }
-
-.cmd-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 4px 10px;
-  height: 32px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: var(--mute);
-  font-size: 12px;
-  font-weight: 460;
-  border-radius: var(--rounded-full);
-  transition: border-color var(--transition), color var(--transition);
-}
-.cmd-button:hover { border-color: var(--primary); color: var(--ink); }
-.cmd-keys { display: inline-flex; gap: 4px; }
 
 .menu-button {
   display: none;
@@ -311,7 +295,7 @@ a:focus-visible,
 
 .hero {
   position: relative;
-  padding: 80px 24px var(--space-section);
+  padding: 16px 24px var(--space-section);
   width: 100%;
   margin: 0 auto;
   display: flex;
