@@ -187,12 +187,6 @@ export function App() {
               <a className="brand-link" href="#top" aria-label="HOUSD, kembali ke atas">
                 <Wordmark />
               </a>
-              <div className="topbar-status" aria-hidden="true">
-                <span className="status-dot" />
-                BNB Testnet
-                <span className="topbar-divider">·</span>
-                <span className="topbar-demo">LIVE v1.0</span>
-              </div>
               <div className="topbar-actions">
                 <button
                   className="menu-button"

@@ -132,17 +132,17 @@ a:focus-visible,
 }
 .skip-link:focus { left: 16px; top: 16px; }
 
-/* ---------- Navigation Bar (Floating Pill) ---------- */
+/* ---------- Navigation Bar (Floating Pill - Fixed on Scroll) ---------- */
 
 .topbar-wrapper {
-  position: sticky;
+  position: fixed;
   top: 16px;
-  z-index: 40;
-  width: 100%;
+  left: 0;
+  right: 0;
+  z-index: 100;
   display: flex;
   justify-content: center;
   padding: 0 16px;
-  margin-bottom: 40px;
   pointer-events: none;
 }
 
@@ -151,15 +151,14 @@ a:focus-visible,
   width: min(860px, 100%);
   height: 52px;
   border-radius: var(--rounded-full);
-  background: rgba(27, 25, 56, 0.75);
+  background: rgba(27, 25, 56, 0.85);
   backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.16);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   padding: 0 20px;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 20px;
 }
 
 .brand-link { display: inline-flex; align-items: center; }
@@ -173,33 +172,10 @@ a:focus-visible,
 }
 .wordmark-dot { color: var(--primary); margin-left: 1px; }
 
-.topbar-status {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  justify-self: center;
-  font-family: var(--mono-font);
-  font-size: 12px;
-  font-weight: 460;
-  letter-spacing: 0.04em;
-  color: var(--mute);
-  text-transform: uppercase;
-}
-.topbar-divider { color: var(--stone); }
-.topbar-demo { color: var(--primary); font-weight: 500; }
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: var(--rounded-full);
-  background: var(--badge-success);
-  box-shadow: 0 0 0 3px rgba(43, 154, 102, 0.2);
-}
-
 .topbar-actions {
   display: flex;
   align-items: center;
   gap: 16px;
-  justify-self: end;
 }
 
 .menu-button {
@@ -295,7 +271,7 @@ a:focus-visible,
 
 .hero {
   position: relative;
-  padding: 16px 24px var(--space-section);
+  padding: 100px 24px var(--space-section);
   width: 100%;
   margin: 0 auto;
   display: flex;
