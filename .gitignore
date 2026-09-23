@@ -8,3 +8,14 @@ node_modules/
 # Local build output and npm logs
 dist/
 *.log
+
+# Hardhat build output
+artifacts/
+cache/
+backend/artifacts/
+backend/cache/
+
+# Environment & secrets
+.env
+.env.local
+*.key
