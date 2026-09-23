@@ -84,6 +84,76 @@ function Wordmark() {
   );
 }
 
+function HeroAppPreview() {
+  return (
+    <div className="hero-app-container">
+      <div className="hero-app-window">
+        <div className="hero-app-header">
+          <div className="hero-app-controls">
+            <span className="control-dot close" />
+            <span className="control-dot minimize" />
+            <span className="control-dot maximize" />
+          </div>
+          <div className="hero-app-title">
+            <span className="wordmark-mini">HOUSD</span>
+            <span className="topbar-divider">·</span>
+            <span>Housing Credit Vault (BNB Testnet)</span>
+          </div>
+          <span className="state-chip state-chip--onchain">LIVE ONCHAIN</span>
+        </div>
+        <div className="hero-app-body">
+          <div className="hero-app-sidebar">
+            <div className="sidebar-item is-active">
+              <span className="sidebar-icon">❖</span>
+              <span>Vault Overview</span>
+            </div>
+            <div className="sidebar-item">
+              <span className="sidebar-icon">⟁</span>
+              <span>Commit-Reveal Bids</span>
+            </div>
+            <div className="sidebar-item">
+              <span className="sidebar-icon">🛡</span>
+              <span>Underwriting Proof</span>
+            </div>
+          </div>
+          <div className="hero-app-main">
+            <div className="hero-app-stat-grid">
+              <div className="app-stat-card">
+                <span className="app-stat-label">Total Vault Liquidity</span>
+                <span className="app-stat-value">$2,500,000 USDC</span>
+              </div>
+              <div className="app-stat-card">
+                <span className="app-stat-label">Auction Mode</span>
+                <span className="app-stat-value">Sealed Commit-Reveal</span>
+              </div>
+              <div className="app-stat-card">
+                <span className="app-stat-label">Max Risk LTV</span>
+                <span className="app-stat-value">70.0%</span>
+              </div>
+            </div>
+            <div className="hero-app-rows">
+              <div className="app-row">
+                <div className="app-row-info">
+                  <span className="app-row-title">Permohonan Kredit #0412 — Cluster Residential BSD</span>
+                  <span className="app-row-sub">Evaluasi Offchain Selesai · Bid Sealed #0x82f...a1</span>
+                </div>
+                <span className="state-chip state-chip--onchain">ALLOCATED ONCHAIN</span>
+              </div>
+              <div className="app-row">
+                <div className="app-row-info">
+                  <span className="app-row-title">Permohonan Kredit #0413 — Modern Housing Bintaro</span>
+                  <span className="app-row-sub">Verifikasi Dokumen Agunan · Risk Limit Checked</span>
+                </div>
+                <span className="state-chip state-chip--offchain">VERIFIED OFFCHAIN</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -110,60 +180,60 @@ export function App() {
     <div className="app-shell">
       <a className="skip-link" href="#main">Lewati ke konten</a>
 
-      <header className="topbar">
-        <a className="brand-link" href="#top" aria-label="HOUSD, kembali ke atas">
-          <Wordmark />
-        </a>
-        <div className="topbar-status" aria-hidden="true">
-          <span className="status-dot" />
-          BNB Testnet
-          <span className="topbar-divider">·</span>
-          Housing Credit Vault
-          <span className="topbar-divider">·</span>
-          <span className="topbar-demo">DEMO</span>
-        </div>
-        <div className="topbar-actions">
-          <button className="cmd-button" type="button" aria-label="Buka command bar">
-            <span>Command bar</span>
-            <span className="cmd-keys">
-              <Kbd>⌘</Kbd>
-              <Kbd>K</Kbd>
-            </span>
-          </button>
-          <button
-            className="menu-button"
-            type="button"
-            aria-expanded={menuOpen}
-            aria-controls="site-nav"
-            onClick={() => setMenuOpen((value) => !value)}
-          >
-            <span>{menuOpen ? 'Tutup' : 'Menu'}</span>
-          </button>
-          <nav
-            id="site-nav"
-            className={menuOpen ? 'nav-links is-open' : 'nav-links'}
-            aria-label="Navigasi utama"
-          >
-            <a href="#cara-kerja" onClick={() => setMenuOpen(false)}>Cara kerja</a>
-            <a href="#demo" onClick={() => setMenuOpen(false)}>Demo</a>
-            <a href="#transparansi" onClick={() => setMenuOpen(false)}>Transparansi</a>
-            <a href="#risiko" onClick={() => setMenuOpen(false)}>Risiko</a>
-          </nav>
-          <button className="cta-button" type="button" onClick={() => setDialogOpen(true)}>
-            Mulai demo
-          </button>
-        </div>
-      </header>
+      <div className="topbar-wrapper">
+        <header className="topbar">
+          <a className="brand-link" href="#top" aria-label="HOUSD, kembali ke atas">
+            <Wordmark />
+          </a>
+          <div className="topbar-status" aria-hidden="true">
+            <span className="status-dot" />
+            BNB Testnet
+            <span className="topbar-divider">·</span>
+            <span className="topbar-demo">LIVE v1.0</span>
+          </div>
+          <div className="topbar-actions">
+            <button className="cmd-button" type="button" aria-label="Buka command bar">
+              <span>Command bar</span>
+              <span className="cmd-keys">
+                <Kbd>⌘</Kbd>
+                <Kbd>K</Kbd>
+              </span>
+            </button>
+            <button
+              className="menu-button"
+              type="button"
+              aria-expanded={menuOpen}
+              aria-controls="site-nav"
+              onClick={() => setMenuOpen((value) => !value)}
+            >
+              <span>{menuOpen ? 'Tutup' : 'Menu'}</span>
+            </button>
+            <nav
+              id="site-nav"
+              className={menuOpen ? 'nav-links is-open' : 'nav-links'}
+              aria-label="Navigasi utama"
+            >
+              <a href="#cara-kerja" onClick={() => setMenuOpen(false)}>Cara kerja</a>
+              <a href="#demo" onClick={() => setMenuOpen(false)}>Demo</a>
+              <a href="#transparansi" onClick={() => setMenuOpen(false)}>Transparansi</a>
+              <a href="#risiko" onClick={() => setMenuOpen(false)}>Risiko</a>
+            </nav>
+            <button className="cta-button" type="button" onClick={() => setDialogOpen(true)}>
+              Mulai demo
+            </button>
+          </div>
+        </header>
+      </div>
 
       <main id="main">
         <section className="hero" id="top" aria-labelledby="hero-title">
           <div className="hero-eyebrow">
             <span className="eyebrow-mark" />
-            <span>Housing credit market · Indonesia</span>
+            <span>Live · Housing credit market · Indonesia</span>
           </div>
           <h1 id="hero-title" className="hero-title">
             Modal untuk rumah,<br />
-            dialokasikan terbuka.
+            dialokasikan <span className="hero-highlight">terbuka.</span>
           </h1>
           <p className="hero-copy">
             HOUSD menyatukan investor stablecoin dan borrower properti yang telah lolos review
@@ -180,6 +250,8 @@ export function App() {
             </a>
           </div>
           <p className="hero-disclosure">Simulasi hackathon. Bukan produk investasi atau janji imbal hasil.</p>
+
+          <HeroAppPreview />
 
           <div className="proof-strip" aria-label="Ringkasan status demo">
             {proofStats.map((stat) => (
