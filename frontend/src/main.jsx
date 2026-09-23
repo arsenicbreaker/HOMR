@@ -9,23 +9,79 @@ const proofItems = [
   { label: 'Collateral review', value: 'Referensi privat', state: 'VERIFIED OFFCHAIN' },
 ];
 
+const decisions = [
+  {
+    id: 'eligibility',
+    number: '01',
+    kicker: 'Credit eligibility',
+    title: 'Review yang menjaga data sensitif tetap privat.',
+    body:
+      'Credit manager memeriksa borrower, properti, valuasi, dan batas risiko. Hanya hasil keputusan dan referensi yang masuk ke alur publik.',
+    state: 'VERIFIED OFFCHAIN',
+    stateKey: 'offchain',
+  },
+  {
+    id: 'allocation',
+    number: '02',
+    kicker: 'Capital allocation',
+    title: 'Lelang tertutup yang hasilnya bisa diaudit.',
+    body:
+      'Borrower yang disetujui mengirim commitment, membuka bid, dan menerima alokasi deterministik sesuai likuiditas dan limit vault.',
+    state: 'ONCHAIN',
+    stateKey: 'onchain',
+  },
+];
+
 const journeys = {
   investor: {
     eyebrow: 'Jalur investor',
     title: 'Satu vault, alokasi yang bisa ditelusuri.',
     copy: 'Deposit mock USDC, terima vault shares, lalu lihat bagaimana modal dialokasikan dan dikembalikan.',
     steps: ['Deposit mock USDC', 'Terima vault shares', 'Pantau loan dan repayment'],
+    shortcut: 'I',
   },
   borrower: {
     eyebrow: 'Jalur borrower',
     title: 'Bersaing untuk modal, tanpa membuka dokumen sensitif.',
     copy: 'Borrower yang sudah lolos review mengikuti lelang tertutup. Smart contract memvalidasi reveal dan menentukan alokasi.',
     steps: ['Dapatkan approval', 'Commit lalu reveal bid', 'Terima hasil alokasi'],
+    shortcut: 'B',
   },
 };
 
-function Mark() {
-  return <span className="wordmark">HOMR<span>.</span></span>;
+const proofStats = [
+  { id: 'eligibility', label: 'Eligibility', detail: 'review offchain' },
+  { id: 'allocation', label: 'Allocation', detail: 'auction onchain' },
+  { id: 'proof', label: 'Proof', detail: 'testnet events' },
+];
+
+const shortcuts = [
+  { keys: ['J', 'K'], label: 'navigasi' },
+  { keys: ['Enter'], label: 'buka' },
+  { keys: ['⌘', 'K'], label: 'command bar' },
+];
+
+function Kbd({ children }) {
+  return <kbd className="kbd">{children}</kbd>;
+}
+
+function ShortcutRow({ keys: keysList, label }) {
+  return (
+    <span className="shortcut">
+      {keysList.map((key) => (
+        <Kbd key={key}>{key}</Kbd>
+      ))}
+      <span className="shortcut-label">{label}</span>
+    </span>
+  );
+}
+
+function Wordmark() {
+  return (
+    <span className="wordmark" aria-hidden="true">
+      HOUSD<span className="wordmark-dot">.</span>
+    </span>
+  );
 }
 
 export function App() {
@@ -48,173 +104,273 @@ export function App() {
     requestAnimationFrame(() => document.querySelector('#demo')?.scrollIntoView({ behavior: 'smooth' }));
   };
 
+  const activeJourney = journeys[journey];
+
   return (
-    <>
-      <header className="site-header">
-        <a className="brand-link" href="#top" aria-label="HOMR, kembali ke atas"><Mark /></a>
-        <button
-          className="menu-button"
-          type="button"
-          aria-expanded={menuOpen}
-          aria-controls="site-nav"
-          onClick={() => setMenuOpen((value) => !value)}
-        >
-          <span>{menuOpen ? 'Tutup' : 'Menu'}</span>
-        </button>
-        <nav id="site-nav" className={menuOpen ? 'nav-links is-open' : 'nav-links'} aria-label="Navigasi utama">
-          <a href="#cara-kerja" onClick={() => setMenuOpen(false)}>Cara kerja</a>
-          <a href="#transparansi" onClick={() => setMenuOpen(false)}>Transparansi</a>
-          <a href="#risiko" onClick={() => setMenuOpen(false)}>Risiko</a>
-        </nav>
-        <button className="nav-cta" type="button" onClick={() => setDialogOpen(true)}>
-          Coba demo
-        </button>
+    <div className="app-shell">
+      <a className="skip-link" href="#main">Lewati ke konten</a>
+
+      <header className="topbar">
+        <a className="brand-link" href="#top" aria-label="HOUSD, kembali ke atas">
+          <Wordmark />
+        </a>
+        <div className="topbar-status" aria-hidden="true">
+          <span className="status-dot" />
+          BNB Testnet
+          <span className="topbar-divider">·</span>
+          Housing Credit Vault
+          <span className="topbar-divider">·</span>
+          <span className="topbar-demo">DEMO</span>
+        </div>
+        <div className="topbar-actions">
+          <button className="cmd-button" type="button" aria-label="Buka command bar">
+            <span>Command bar</span>
+            <span className="cmd-keys">
+              <Kbd>⌘</Kbd>
+              <Kbd>K</Kbd>
+            </span>
+          </button>
+          <button
+            className="menu-button"
+            type="button"
+            aria-expanded={menuOpen}
+            aria-controls="site-nav"
+            onClick={() => setMenuOpen((value) => !value)}
+          >
+            <span>{menuOpen ? 'Tutup' : 'Menu'}</span>
+          </button>
+          <nav
+            id="site-nav"
+            className={menuOpen ? 'nav-links is-open' : 'nav-links'}
+            aria-label="Navigasi utama"
+          >
+            <a href="#cara-kerja" onClick={() => setMenuOpen(false)}>Cara kerja</a>
+            <a href="#demo" onClick={() => setMenuOpen(false)}>Demo</a>
+            <a href="#transparansi" onClick={() => setMenuOpen(false)}>Transparansi</a>
+            <a href="#risiko" onClick={() => setMenuOpen(false)}>Risiko</a>
+          </nav>
+          <button className="cta-button" type="button" onClick={() => setDialogOpen(true)}>
+            Mulai demo
+          </button>
+        </div>
       </header>
 
-      <main id="top">
-        <section className="hero" aria-labelledby="hero-title">
-          <div className="hero-photo" aria-hidden="true" />
-          <div className="hero-shade" aria-hidden="true" />
-          <div className="floating-notes" aria-hidden="true">
-            <span className="note note-one">BNB Testnet</span>
-            <span className="note note-two">commit + reveal</span>
-            <span className="note note-three">⌂ verified trail</span>
-            <span className="note note-four">qualified only</span>
-            <span className="note note-five">(˶ᵔ ᵕ ᵔ˶)</span>
-            <span className="note note-six">mock USDC</span>
+      <main id="main">
+        <section className="hero" id="top" aria-labelledby="hero-title">
+          <div className="hero-eyebrow">
+            <span className="eyebrow-mark" />
+            <span>Housing credit market · Indonesia</span>
           </div>
-          <div className="hero-content">
-            <p className="eyebrow">Housing credit market, Indonesia</p>
-            <h1 id="hero-title">Modal untuk rumah,<br /><span>dialokasikan terbuka.</span></h1>
-            <p className="hero-copy">
-              HOMR menyatukan investor stablecoin dan borrower properti yang telah lolos review melalui vault sederhana dan lelang yang dapat diverifikasi.
-            </p>
-            <div className="hero-actions">
-              <button className="primary-button" type="button" onClick={() => setDialogOpen(true)}>Masuk ke demo</button>
-              <a className="text-link" href="#cara-kerja">Lihat mekanismenya <span aria-hidden="true">↓</span></a>
-            </div>
-            <p className="hero-disclosure">Simulasi hackathon. Bukan produk investasi atau janji imbal hasil.</p>
+          <h1 id="hero-title" className="hero-title">
+            Modal untuk rumah,<br />
+            dialokasikan terbuka.
+          </h1>
+          <p className="hero-copy">
+            HOUSD menyatukan investor stablecoin dan borrower properti yang telah lolos review
+            melalui vault sederhana dan lelang yang dapat diverifikasi.
+          </p>
+          <div className="hero-actions">
+            <button className="cta-button cta-button--primary" type="button" onClick={() => setDialogOpen(true)}>
+              Mulai demo
+              <span aria-hidden="true" className="cta-arrow">›</span>
+            </button>
+            <a className="ghost-link" href="#cara-kerja">
+              Lihat mekanismenya
+              <span aria-hidden="true">↓</span>
+            </a>
           </div>
+          <p className="hero-disclosure">Simulasi hackathon. Bukan produk investasi atau janji imbal hasil.</p>
+
           <div className="proof-strip" aria-label="Ringkasan status demo">
-            <div><span>01</span><strong>Eligibility</strong><small>review offchain</small></div>
-            <div><span>02</span><strong>Allocation</strong><small>auction onchain</small></div>
-            <div><span>03</span><strong>Proof</strong><small>testnet events</small></div>
+            {proofStats.map((stat) => (
+              <div className="proof-stat" key={stat.id}>
+                <span className="proof-stat-label">{stat.label}</span>
+                <span className="proof-stat-detail">{stat.detail}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="shortcut-strip" aria-label="Pintasan keyboard">
+            {shortcuts.map((shortcut) => (
+              <ShortcutRow key={shortcut.label} {...shortcut} />
+            ))}
           </div>
         </section>
 
-        <section className="split-decision" id="cara-kerja" aria-labelledby="decision-title">
-          <div className="section-intro">
-            <p className="eyebrow dark">Dua keputusan, dua lapisan</p>
-            <h2 id="decision-title">Kredit dinilai manusia.<br />Modal dialokasikan kontrak.</h2>
-          </div>
-          <div className="decision-rail">
-            <article className="decision-card human-card">
-              <span className="card-number">01</span>
-              <p className="card-kicker">Credit eligibility</p>
-              <h3>Review yang menjaga data sensitif tetap privat.</h3>
-              <p>Credit manager memeriksa borrower, properti, valuasi, dan batas risiko. Hanya hasil keputusan dan referensi yang masuk ke alur publik.</p>
-              <span className="status-label offchain">VERIFIED OFFCHAIN</span>
-            </article>
-            <div className="rail-connector" aria-hidden="true"><span>then</span></div>
-            <article className="decision-card contract-card">
-              <span className="card-number">02</span>
-              <p className="card-kicker">Capital allocation</p>
-              <h3>Lelang tertutup yang hasilnya bisa diaudit.</h3>
-              <p>Borrower yang disetujui mengirim commitment, membuka bid, dan menerima alokasi deterministik sesuai likuiditas dan limit vault.</p>
-              <span className="status-label onchain">ONCHAIN</span>
-            </article>
-          </div>
+        <section className="decisions" id="cara-kerja" aria-labelledby="decision-title">
+          <header className="section-header">
+            <p className="section-eyebrow">Dua keputusan, dua lapisan</p>
+            <h2 id="decision-title" className="section-title">
+              Kredit dinilai manusia.<br />
+              Modal dialokasikan kontrak.
+            </h2>
+          </header>
+          <ul className="decision-list">
+            {decisions.map((decision) => (
+              <li className="decision-row" key={decision.id}>
+                <span className={`decision-dot decision-dot--${decision.stateKey}`} aria-hidden="true" />
+                <div className="decision-body">
+                  <span className="decision-number">{decision.number}</span>
+                  <p className="decision-kicker">{decision.kicker}</p>
+                  <h3 className="decision-title">{decision.title}</h3>
+                  <p className="decision-copy">{decision.body}</p>
+                </div>
+                <span className={`state-chip state-chip--${decision.stateKey}`}>{decision.state}</span>
+              </li>
+            ))}
+          </ul>
         </section>
 
-        <section className="demo-section" id="demo" aria-labelledby="demo-title">
+        <section className="demo" id="demo" aria-labelledby="demo-title">
           <div className="demo-tabs" role="tablist" aria-label="Pilih perjalanan demo">
             {Object.keys(journeys).map((key) => (
               <button
                 key={key}
                 role="tab"
                 aria-selected={journey === key}
-                className={journey === key ? 'active' : ''}
+                className={journey === key ? 'demo-tab is-active' : 'demo-tab'}
                 onClick={() => setJourney(key)}
                 type="button"
               >
-                {key === 'investor' ? 'Investor' : 'Borrower'}
+                <span className="demo-tab-label">
+                  {key === 'investor' ? 'Investor' : 'Borrower'}
+                </span>
+                <span className="demo-tab-shortcut">
+                  Tekan <Kbd>{journeys[key].shortcut}</Kbd>
+                </span>
               </button>
             ))}
           </div>
-          <div className="demo-copy">
-            <p className="eyebrow dark">{journeys[journey].eyebrow}</p>
-            <h2 id="demo-title">{journeys[journey].title}</h2>
-            <p>{journeys[journey].copy}</p>
-          </div>
-          <ol className="journey-steps">
-            {journeys[journey].steps.map((step, index) => (
-              <li key={step}><span>0{index + 1}</span><strong>{step}</strong></li>
-            ))}
-          </ol>
-          <div className="demo-notice">
-            <span className="status-label simulated">SIMULATED DEMO</span>
-            <p>Alur dapat dijalankan tanpa wallet atau dana nyata. Transaksi onchain akan ditandai terpisah.</p>
+          <div className="demo-panel">
+            <p className="section-eyebrow">{activeJourney.eyebrow}</p>
+            <h2 id="demo-title" className="section-title section-title--md">
+              {activeJourney.title}
+            </h2>
+            <p className="demo-copy">{activeJourney.copy}</p>
+            <ol className="journey-steps">
+              {activeJourney.steps.map((step, index) => (
+                <li className="journey-step" key={step}>
+                  <span className="journey-step-number">
+                    0{index + 1}
+                  </span>
+                  <span className="journey-step-label">{step}</span>
+                  <span className="journey-step-meta" aria-hidden="true">›</span>
+                </li>
+              ))}
+            </ol>
+            <div className="demo-notice">
+              <span className="state-chip state-chip--simulated">SIMULATED DEMO</span>
+              <p>Alur dapat dijalankan tanpa wallet atau dana nyata. Transaksi onchain akan ditandai terpisah.</p>
+            </div>
           </div>
         </section>
 
         <section className="transparency" id="transparansi" aria-labelledby="transparency-title">
-          <div className="transparency-title-wrap">
-            <p className="eyebrow dark">Bukti sebelum klaim</p>
-            <h2 id="transparency-title">Selalu tahu apa yang nyata, privat, atau simulasi.</h2>
-          </div>
-          <div className="proof-ledger">
-            {proofItems.map((item) => (
-              <div className="ledger-row" key={item.label}>
-                <span>{item.label}</span>
-                <strong>{item.value}</strong>
-                <em className={`state-${item.state.toLowerCase().replace(' ', '-')}`}>{item.state}</em>
-              </div>
-            ))}
+          <header className="section-header">
+            <p className="section-eyebrow">Bukti sebelum klaim</p>
+            <h2 id="transparency-title" className="section-title">
+              Selalu tahu apa yang nyata, privat, atau simulasi.
+            </h2>
+          </header>
+          <div className="ledger" role="list">
+            <div className="ledger-head" aria-hidden="true">
+              <span>Field</span>
+              <span>Value</span>
+              <span>State</span>
+            </div>
+            {proofItems.map((item) => {
+              const stateKey = item.state.toLowerCase().replace(' ', '-');
+              return (
+                <div className="ledger-row" key={item.label} role="listitem">
+                  <span className="ledger-label">{item.label}</span>
+                  <strong className="ledger-value">{item.value}</strong>
+                  <span className={`state-chip state-chip--${stateKey}`}>{item.state}</span>
+                </div>
+              );
+            })}
           </div>
         </section>
 
-        <section className="risk-section" id="risiko" aria-labelledby="risk-title">
-          <div>
-            <p className="eyebrow">Batas yang terlihat</p>
-            <h2 id="risk-title">Transparan bukan berarti tanpa risiko.</h2>
-          </div>
+        <section className="risk" id="risiko" aria-labelledby="risk-title">
           <div className="risk-copy">
-            <p>HOMR memperlihatkan LTV, konsentrasi, maturity, status loan, dan bukti transaksi. Prototype tidak memverifikasi agunan nyata dan belum diaudit.</p>
-            <a href="#top">Baca kembali ringkasan <span aria-hidden="true">↑</span></a>
+            <p className="section-eyebrow">Batas yang terlihat</p>
+            <h2 id="risk-title" className="section-title">
+              Transparan bukan berarti tanpa risiko.
+            </h2>
+            <p className="risk-body">
+              HOUSD memperlihatkan LTV, konsentrasi, maturity, status loan, dan bukti transaksi.
+              Prototype tidak memverifikasi agunan nyata dan belum diaudit.
+            </p>
+            <a className="ghost-link" href="#top">
+              Kembali ke atas <span aria-hidden="true">↑</span>
+            </a>
           </div>
-          <div className="risk-stamp" aria-hidden="true">NO<br />YIELD<br />PROMISES</div>
+          <div className="risk-stamp" aria-hidden="true">
+            <span>NO YIELD</span>
+            <span>PROMISES</span>
+          </div>
         </section>
       </main>
 
-      <footer>
-        <Mark />
+      <footer className="site-footer">
+        <Wordmark />
         <p>Finance &amp; Commerce track · Indonesia Web3 Hackathon 2026</p>
-        <p className="photo-credit">Hero photo: <a href="https://www.rumah123.com/panduan-properti/rekomendasi-rumah-di-ciputat/" target="_blank" rel="noreferrer">Rumah123</a></p>
+        <p className="footer-meta">v0.1 · testnet</p>
       </footer>
 
       {dialogOpen && (
-        <div className="dialog-backdrop" role="presentation" onMouseDown={(event) => {
-          if (event.target === event.currentTarget) setDialogOpen(false);
-        }}>
+        <div
+          className="dialog-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setDialogOpen(false);
+          }}
+        >
           <div className="journey-dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
-            <button className="dialog-close" type="button" aria-label="Tutup pilihan demo" onClick={() => setDialogOpen(false)}>×</button>
-            <p className="eyebrow dark">SIMULATED DEMO</p>
-            <h2 id="dialog-title">Kamu mau melihat HOMR dari sisi mana?</h2>
-            <div className="dialog-options">
-              <button type="button" onClick={() => chooseJourney('investor')}>
-                <span>Investor</span>
-                <small>Deposit dan pantau vault</small>
-              </button>
-              <button type="button" onClick={() => chooseJourney('borrower')}>
-                <span>Borrower</span>
-                <small>Commit dan reveal bid</small>
+            <div className="dialog-header">
+              <p className="section-eyebrow">SIMULATED DEMO</p>
+              <button
+                className="dialog-close"
+                type="button"
+                aria-label="Tutup pilihan demo"
+                onClick={() => setDialogOpen(false)}
+              >
+                <span aria-hidden="true">×</span>
               </button>
             </div>
-            <p className="dialog-fineprint">Tidak perlu wallet. Semua nilai di halaman demo diberi label sesuai sumbernya.</p>
+            <h2 id="dialog-title" className="dialog-title">
+              Kamu mau melihat HOUSD dari sisi mana?
+            </h2>
+            <div className="dialog-options">
+              {Object.keys(journeys).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  className="dialog-option"
+                  onClick={() => chooseJourney(key)}
+                >
+                  <span className="dialog-option-label">
+                    {key === 'investor' ? 'Investor' : 'Borrower'}
+                  </span>
+                  <span className="dialog-option-detail">
+                    {key === 'investor'
+                      ? 'Deposit dan pantau vault'
+                      : 'Commit dan reveal bid'}
+                  </span>
+                  <span className="dialog-option-arrow" aria-hidden="true">›</span>
+                </button>
+              ))}
+            </div>
+            <p className="dialog-fineprint">
+              Tidak perlu wallet. Semua nilai di halaman demo diberi label sesuai sumbernya.
+              <span className="dialog-hint">
+                Tekan <Kbd>ESC</Kbd> untuk tutup.
+              </span>
+            </p>
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
 
