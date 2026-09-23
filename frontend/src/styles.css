@@ -156,9 +156,10 @@ a:focus-visible,
   border: 1px solid rgba(255, 255, 255, 0.16);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   padding: 0 20px;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
+  gap: 20px;
 }
 
 .brand-link { display: inline-flex; align-items: center; }
@@ -172,10 +173,25 @@ a:focus-visible,
 }
 .wordmark-dot { color: var(--primary); margin-left: 1px; }
 
+.nav-links {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  justify-self: center;
+}
+.nav-links a {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--mute);
+  transition: color var(--transition);
+}
+.nav-links a:hover { color: var(--ink); }
+
 .topbar-actions {
   display: flex;
   align-items: center;
   gap: 16px;
+  justify-self: end;
 }
 
 .menu-button {
@@ -189,15 +205,6 @@ a:focus-visible,
   font-weight: 500;
 }
 .menu-button:hover { border-color: var(--primary); }
-
-.nav-links { display: flex; gap: 20px; align-items: center; }
-.nav-links a {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--mute);
-  transition: color var(--transition);
-}
-.nav-links a:hover { color: var(--ink); }
 
 /* ---------- Buttons ---------- */
 
