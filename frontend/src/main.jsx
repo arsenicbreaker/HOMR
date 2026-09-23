@@ -187,6 +187,16 @@ export function App() {
               <a className="brand-link" href="#top" aria-label="HOUSD, kembali ke atas">
                 <Wordmark />
               </a>
+              <nav
+                id="site-nav"
+                className={menuOpen ? 'nav-links is-open' : 'nav-links'}
+                aria-label="Navigasi utama"
+              >
+                <a href="#cara-kerja" onClick={() => setMenuOpen(false)}>Cara kerja</a>
+                <a href="#demo" onClick={() => setMenuOpen(false)}>Demo</a>
+                <a href="#transparansi" onClick={() => setMenuOpen(false)}>Transparansi</a>
+                <a href="#risiko" onClick={() => setMenuOpen(false)}>Risiko</a>
+              </nav>
               <div className="topbar-actions">
                 <button
                   className="menu-button"
@@ -197,16 +207,6 @@ export function App() {
                 >
                   <span>{menuOpen ? 'Tutup' : 'Menu'}</span>
                 </button>
-                <nav
-                  id="site-nav"
-                  className={menuOpen ? 'nav-links is-open' : 'nav-links'}
-                  aria-label="Navigasi utama"
-                >
-                  <a href="#cara-kerja" onClick={() => setMenuOpen(false)}>Cara kerja</a>
-                  <a href="#demo" onClick={() => setMenuOpen(false)}>Demo</a>
-                  <a href="#transparansi" onClick={() => setMenuOpen(false)}>Transparansi</a>
-                  <a href="#risiko" onClick={() => setMenuOpen(false)}>Risiko</a>
-                </nav>
                 <button className="cta-button" type="button" onClick={() => setDialogOpen(true)}>
                   Mulai demo
                 </button>
