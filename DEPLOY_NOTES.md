@@ -1,0 +1,9 @@
+# HOMR Deployment Notes
+Deployer Address: 0xEDCBD7A4A4935eC62730b18f6E2616d615cA3d6c
+Network: BNB Chain Testnet (or Hardhat Local)
+
+## Contract Addresses
+- MockUSDC: 0x79DC4174a70F45863c9a4Ed9624a5029B461D88c
+- HousingCreditVault: 0x44a77575A87deFd77AbAe64Ba88D670Cc837812a
+- LoanManager: 0x785392C16dD47F2807eA34c4bBC5F0CC33EC0072
+- CreditAuction: 0x87Ac44aeFAc9798C76a8a640F14e8151bF53Ba06
