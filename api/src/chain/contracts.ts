@@ -67,8 +67,14 @@ export const abis = {
     ]),
 };
 
+/**
+ * Baca state vault via multicall.
+ *
+ * viem bisa mengembalikan hasil dengan tipe yang tidak seragam (bigint | number | undefined).
+ * Kita normalisasi semua ke bigint secara eksplisit supaya operasi aritmetika aman.
+ */
 export async function getVaultState() {
-    const [available, deployed, totalSupply] = await publicClient.multicall({
+    const results = await publicClient.multicall({
         contracts: [
             { address: config.addresses.vault, abi: abis.vault, functionName: "availableCapital" },
             { address: config.addresses.vault, abi: abis.vault, functionName: "totalDeployedCapital" },
@@ -76,8 +82,15 @@ export async function getVaultState() {
         ],
     });
 
+    const available = toBigIntSafe(results[0]?.result);
+    const deployed = toBigIntSafe(results[1]?.result);
+    const totalSupply = toBigIntSafe(results[2]?.result);
+
     const totalAssets = available + deployed;
-    const sharePrice = totalSupply === 0n ? 10n ** 6n : (totalAssets * 10n ** 6n) / totalSupply;
+    const sharePrice =
+        totalSupply === 0n
+            ? 1_000_000n
+            : (totalAssets * 1_000_000n) / totalSupply;
 
     return {
         availableCapital: available.toString(),
@@ -86,6 +99,24 @@ export async function getVaultState() {
         totalShares: totalSupply.toString(),
         sharePrice: sharePrice.toString(),
     };
+}
+
+/**
+ * Konversi nilai apapun (bigint, number, string, undefined) menjadi bigint dengan aman.
+ * Dipakai untuk menormalkan hasil multicall dari viem.
+ */
+function toBigIntSafe(value: unknown): bigint {
+    if (value === null || value === undefined) return 0n;
+    if (typeof value === "bigint") return value;
+    if (typeof value === "number") return BigInt(Math.trunc(value));
+    if (typeof value === "string") {
+        try {
+            return BigInt(value);
+        } catch {
+            return 0n;
+        }
+    }
+    return 0n;
 }
 
 export { account as adminAccount };
