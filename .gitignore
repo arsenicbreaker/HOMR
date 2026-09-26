@@ -25,8 +25,8 @@ out/
 # Environment & secrets — JANGAN PERNAH COMMIT
 # ============================================
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 env_api
 env_api.*
 api.env
