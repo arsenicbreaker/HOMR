@@ -1,21 +1,58 @@
-# Product requirements documents
-prd_hom.md
-PRD_HOMR.md
-
-# npm dependencies
+# ============================================
+# Dependencies
+# ============================================
 node_modules/
+*/node_modules/
+**/node_modules/
 
-# Local build output and npm logs
+# ============================================
+# Build output
+# ============================================
 dist/
+build/
 *.log
 
-# Hardhat build output
+# Hardhat
 artifacts/
 cache/
 backend/artifacts/
 backend/cache/
+backend/typechain-types/
 
-# Environment & secrets
+# Next.js
+.next/
+out/
+
+# ============================================
+# Environment & secrets — JANGAN PERNAH COMMIT
+# ============================================
 .env
 .env.local
+.env.*.local
 *.key
+*.pem
+*.p12
+secrets.json
+
+# ============================================
+# Database lokal
+# ============================================
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# ============================================
+# IDE / OS
+# ============================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# ============================================
+# Misc
+# ============================================
+coverage/
+.cache/

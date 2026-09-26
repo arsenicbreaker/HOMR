@@ -13,18 +13,21 @@ describe("HOMR Backend - Smart Contracts", function () {
     // 1. Deploy MockUSDC
     const MockUSDC = await ethers.getContractFactory("MockUSDC");
     mockUSDC = await MockUSDC.deploy();
-    
+
     // 2. Deploy Vault
     const Vault = await ethers.getContractFactory("HousingCreditVault");
     vault = await Vault.deploy(await mockUSDC.getAddress());
-    
+
     // 3. Deploy LoanManager
     const LoanManager = await ethers.getContractFactory("LoanManager");
     loanManager = await LoanManager.deploy(await vault.getAddress(), await mockUSDC.getAddress());
-    
+
     // 4. Deploy Auction
     const CreditAuction = await ethers.getContractFactory("CreditAuction");
-    auction = await CreditAuction.deploy(await loanManager.getAddress());
+    auction = await CreditAuction.deploy(
+      await loanManager.getAddress(),
+      await vault.getAddress()
+    );
 
     // Setup Roles
     await vault.grantRole(await vault.LOAN_MANAGER_ROLE(), await loanManager.getAddress());
@@ -109,7 +112,7 @@ describe("HOMR Backend - Smart Contracts", function () {
     it("Should allow borrower to repay loan", async function () {
       const loanAmount = ethers.parseUnits("50000", 6);
       await mockUSDC.connect(borrower).approve(await loanManager.getAddress(), loanAmount);
-      
+
       await expect(loanManager.connect(borrower).repayLoan(0, loanAmount))
         .to.emit(loanManager, "LoanRepaid")
         .withArgs(0, loanAmount);

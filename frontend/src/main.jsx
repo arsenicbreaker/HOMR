@@ -3,19 +3,18 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import './styles.css';
 
-import Web3Provider from './context/Web3Provider';
-import { DemoModeProvider } from './context/DemoModeContext';
-import InvestorDashboard from './pages/InvestorDashboard';
-import BorrowerDashboard from './pages/BorrowerDashboard';
-import AdminPanel from './pages/AdminPanel';
-
-
 const proofItems = [
   { label: 'Vault', value: 'Housing Credit Vault', state: 'ONCHAIN' },
   { label: 'Network', value: 'BNB Chain Testnet', state: 'ONCHAIN' },
   { label: 'Borrower data', value: 'Contoh untuk demo', state: 'SIMULATED' },
   { label: 'Collateral review', value: 'Referensi privat', state: 'VERIFIED OFFCHAIN' },
 ];
+
+const API_ENDPOINTS = {
+  vault: `${API_BASE}/api/vault`,
+  loans: `${API_BASE}/api/loans`,
+  events: `${API_BASE}/api/events`,
+};
 
 const decisions = [
   {
@@ -160,18 +159,6 @@ function HeroAppPreview() {
       </div>
     </div>
   );
-}
-
-function useSafeNavigate() {
-  try {
-    return useNavigate();
-  } catch (e) {
-    return (path) => {
-      if (typeof window !== 'undefined' && window.location) {
-        window.location.href = path;
-      }
-    };
-  }
 }
 
 export function App() {
@@ -358,6 +345,22 @@ export function App() {
               Selalu tahu apa yang nyata, privat, atau simulasi.
             </h2>
           </header>
+
+          {/* Live data dari backend → kontrak BNB testnet */}
+          <div className="live-grid">
+            <LiveVaultPanel />
+            <div className="live-panel live-panel--loans">
+              <header className="live-panel-header">
+                <div>
+                  <span className="live-panel-label">Active Loans</span>
+                  <span className="live-panel-sublabel">Dari LoanManager onchain</span>
+                </div>
+              </header>
+              <LiveLoansPanel />
+            </div>
+          </div>
+
+          {/* Ledger statis — menjelaskan sumber data per field */}
           <div className="ledger" role="list">
             <div className="ledger-head" aria-hidden="true">
               <span>Field</span>
