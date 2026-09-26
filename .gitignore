@@ -27,6 +27,8 @@ out/
 .env
 .env.local
 .env.*.local
+env_api
+env_api.*
 *.key
 *.pem
 *.p12
