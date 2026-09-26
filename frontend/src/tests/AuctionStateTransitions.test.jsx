@@ -27,32 +27,42 @@ describe('Auction State Transitions & Commit/Reveal Bidding', () => {
     );
   };
 
-  it('renders credit line approval status and commit/reveal forms', () => {
+  it('separates approval status from commit and reveal actions', () => {
     renderBorrower();
-    expect(screen.getByText('Approved Credit Limit')).toBeTruthy();
-    expect(screen.getByText('Step 1: Commit Bid Hash')).toBeTruthy();
-    expect(screen.getByText('Step 2: Reveal Bid Parameters')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Property.*Application/ }));
+    expect(screen.getByRole('heading', { name: 'Credit approval' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: /Auction.*Commit/ }));
+    expect(screen.getByRole('button', { name: 'Commit bid hash' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Reveal and verify bid' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('tab', { name: '2. Reveal terms' }));
+    expect(screen.getByRole('button', { name: 'Reveal and verify bid' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Commit bid hash' })).toBeNull();
   });
 
   it('triggers commit hash submission', async () => {
     renderBorrower();
-    const commitBtn = screen.getByText('Commit Hash to Auction');
+    fireEvent.click(screen.getByRole('button', { name: /Auction.*Commit/ }));
+    const commitBtn = screen.getByRole('button', { name: 'Commit bid hash' });
 
     fireEvent.click(commitBtn);
 
     await waitFor(() => {
-      expect(screen.getByText('Bid commitment successfully submitted!')).toBeTruthy();
+      expect(screen.getByText('Bid commitment submitted.')).toBeTruthy();
     });
   });
 
   it('triggers reveal bid parameters submission', async () => {
     renderBorrower();
-    const revealBtn = screen.getByText('Reveal & Verify Bid');
+    fireEvent.click(screen.getByRole('button', { name: /Auction.*Commit/ }));
+    fireEvent.click(screen.getByRole('tab', { name: '2. Reveal terms' }));
+    const revealBtn = screen.getByRole('button', { name: 'Reveal and verify bid' });
 
     fireEvent.click(revealBtn);
 
     await waitFor(() => {
-      expect(screen.getByText('Bid parameters revealed and validated!')).toBeTruthy();
+      expect(screen.getByText('Bid parameters revealed and validated.')).toBeTruthy();
     });
   });
 });

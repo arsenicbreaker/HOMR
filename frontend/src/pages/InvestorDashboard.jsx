@@ -1,13 +1,27 @@
 import React, { useState } from 'react';
 import AppLayout from '../components/layout/AppLayout';
-import DataLabelChip from '../components/ui/DataLabelChip';
-import DemoTag from '../components/ui/DemoTag';
+import {
+  EmptyState,
+  Field,
+  Metric,
+  MetricGrid,
+  Notice,
+  PageIntro,
+  Panel,
+  PrimarySummary,
+  SummaryGrid
+} from '../components/layout/DashboardPrimitives';
 import InboxRow from '../components/ui/InboxRow';
-import ShortcutBar from '../components/ui/ShortcutBar';
+import TransparencyLedger from '../components/transparency/TransparencyLedger';
 import { useVault } from '../hooks/useVault';
 import { useLoanManager } from '../hooks/useLoanManager';
-import { colors } from '../theme/colors';
-import { tokens } from '../theme/tokens';
+
+const investorNavigation = [
+  { id: 'overview', icon: 'overview', label: 'Overview', meta: 'Position', group: 'Portfolio' },
+  { id: 'capital', icon: 'capital', label: 'Capital', meta: 'Deposit / redeem', group: 'Portfolio' },
+  { id: 'investments', icon: 'investments', label: 'Investments', meta: 'Loans', group: 'Investments' },
+  { id: 'activity', icon: 'activity', label: 'History', meta: 'Audit trail', group: 'Records' }
+];
 
 export function InvestorDashboard() {
   const {
@@ -22,407 +36,195 @@ export function InvestorDashboard() {
     deposit,
     withdraw
   } = useVault();
-
   const { loans } = useLoanManager();
 
+  const [activeSection, setActiveSection] = useState('overview');
+  const [capitalAction, setCapitalAction] = useState('deposit');
   const [depositAmount, setDepositAmount] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [activeTab, setActiveTab] = useState('deposit'); // 'deposit' | 'withdraw'
   const [statusMsg, setStatusMsg] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleDepositSubmit = async (e) => {
-    e.preventDefault();
-    const val = parseFloat(depositAmount);
-    if (isNaN(val) || val <= 0) {
-      setStatusMsg({ type: 'error', text: 'Deposit amount must be greater than 0' });
+  const handleDepositSubmit = async (event) => {
+    event.preventDefault();
+    const value = parseFloat(depositAmount);
+    if (Number.isNaN(value) || value <= 0) {
+      setStatusMsg({ type: 'error', text: 'Deposit amount must be greater than 0.' });
       return;
     }
-
     setIsProcessing(true);
     setStatusMsg({ type: 'info', text: 'Processing deposit...' });
     try {
-      await deposit(val);
-      setStatusMsg({ type: 'success', text: `Successfully deposited ${val} mUSDC into Vault!` });
+      await deposit(value);
+      setStatusMsg({ type: 'success', text: `Deposited ${value} mUSDC into the vault.` });
       setDepositAmount('');
-    } catch (err) {
-      setStatusMsg({ type: 'error', text: err.message || 'Deposit failed' });
+    } catch (error) {
+      setStatusMsg({ type: 'error', text: error.message || 'Deposit failed.' });
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleWithdrawSubmit = async (e) => {
-    e.preventDefault();
-    const val = parseFloat(withdrawAmount);
-    if (isNaN(val) || val <= 0) {
-      setStatusMsg({ type: 'error', text: 'Withdrawal shares must be greater than 0' });
+  const handleWithdrawSubmit = async (event) => {
+    event.preventDefault();
+    const value = parseFloat(withdrawAmount);
+    if (Number.isNaN(value) || value <= 0) {
+      setStatusMsg({ type: 'error', text: 'Redemption shares must be greater than 0.' });
       return;
     }
-
     setIsProcessing(true);
-    setStatusMsg({ type: 'info', text: 'Processing withdrawal...' });
+    setStatusMsg({ type: 'info', text: 'Processing share redemption...' });
     try {
-      await withdraw(val);
-      setStatusMsg({ type: 'success', text: `Successfully redeemed ${val} hvSHARE` });
+      await withdraw(value);
+      setStatusMsg({ type: 'success', text: `Redeemed ${value} hvSHARE.` });
       setWithdrawAmount('');
-    } catch (err) {
-      setStatusMsg({ type: 'error', text: err.message || 'Withdrawal failed' });
+    } catch (error) {
+      setStatusMsg({ type: 'error', text: error.message || 'Redemption failed.' });
     } finally {
       setIsProcessing(false);
     }
   };
 
+  const activeLoans = loans.filter((loan) => loan.isActive);
+  const hasPosition = parseFloat(String(userShares).replace(/,/g, '')) > 0;
+
   return (
-    <AppLayout>
-      {/* Header */}
-      <div style={{ marginBottom: tokens.spacing.xl }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <h1 style={{ fontSize: '28px', fontWeight: 600, color: colors.ink.primary, margin: 0 }}>
-                Housing Credit Vault
-              </h1>
-              <DataLabelChip type={isDemoMode ? 'simulated' : 'onchain'} />
-            </div>
-            <p style={{ fontSize: '14px', color: colors.ink.tertiary, marginTop: '6px' }}>
-              Senior tranche capital allocation pool backing verified Indonesian residential mortgage loans.
-            </p>
-          </div>
-          <ShortcutBar shortcuts={[{ key: 'D', label: 'Deposit' }, { key: 'W', label: 'Withdraw' }]} />
-        </div>
-      </div>
+    <AppLayout
+      roleLabel="Investor"
+      navItems={investorNavigation}
+      activeSection={activeSection}
+      onSectionChange={setActiveSection}
+      workflowLabel={hasPosition ? 'Capital deployed' : 'Ready to fund'}
+      workflowDetail={hasPosition ? 'Monitor active loans and repayment activity.' : 'Deposit mUSDC to mint your first vault shares.'}
+    >
+      {activeSection === 'overview' && (
+        <>
+          <PageIntro
+            eyebrow="Investor workspace"
+            title="Portfolio overview"
+            description="Your vault position, capital allocation, and the next action that needs attention."
+            chipType={isDemoMode ? 'simulated' : 'onchain'}
+          />
 
-      {/* Overview Stat Grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '16px',
-          marginBottom: tokens.spacing.xl
-        }}
-      >
-        {/* TVL */}
-        <div
-          style={{
-            backgroundColor: colors.card,
-            border: `1px solid ${colors.border}`,
-            borderRadius: tokens.radii.lg,
-            padding: '20px'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '12px', color: colors.ink.tertiary, fontFamily: tokens.fonts.mono }}>TOTAL VAULT TVL</span>
-            <DataLabelChip type={isDemoMode ? 'simulated' : 'onchain'} />
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 600, color: colors.ink.primary, marginTop: '8px', fontFamily: tokens.fonts.mono }}>
-            ${tvl} <span style={{ fontSize: '13px', color: colors.ink.tertiary }}>USDC</span>
-          </div>
-        </div>
+          <SummaryGrid>
+            <PrimarySummary eyebrow="Your portfolio" value={`$${userDeposited}`} unit="mUSDC invested" detail={`${userShares} hvSHARE at $${sharePrice} per share`} />
+            <Metric label="Available capital" value={`$${availableCapital}`} unit="USDC in vault" tone="success" />
+            <Metric label="Active positions" value={activeLoans.length} unit="funded loans" />
+            <Metric label="Projected APY" value={estimatedApy} unit="demo estimate" tone="warning" />
+          </SummaryGrid>
 
-        {/* Share Price */}
-        <div
-          style={{
-            backgroundColor: colors.card,
-            border: `1px solid ${colors.border}`,
-            borderRadius: tokens.radii.lg,
-            padding: '20px'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '12px', color: colors.ink.tertiary, fontFamily: tokens.fonts.mono }}>SHARE PRICE</span>
-            <DataLabelChip type={isDemoMode ? 'simulated' : 'onchain'} />
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 600, color: colors.ink.primary, marginTop: '8px', fontFamily: tokens.fonts.mono }}>
-            ${sharePrice}
-          </div>
-        </div>
-
-        {/* Available Liquidity */}
-        <div
-          style={{
-            backgroundColor: colors.card,
-            border: `1px solid ${colors.border}`,
-            borderRadius: tokens.radii.lg,
-            padding: '20px'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '12px', color: colors.ink.tertiary, fontFamily: tokens.fonts.mono }}>AVAILABLE CAPITAL</span>
-            <DataLabelChip type={isDemoMode ? 'simulated' : 'onchain'} />
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 600, color: colors.state.onchain.color, marginTop: '8px', fontFamily: tokens.fonts.mono }}>
-            ${availableCapital}
-          </div>
-        </div>
-
-        {/* Deployed Capital */}
-        <div
-          style={{
-            backgroundColor: colors.card,
-            border: `1px solid ${colors.border}`,
-            borderRadius: tokens.radii.lg,
-            padding: '20px'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '12px', color: colors.ink.tertiary, fontFamily: tokens.fonts.mono }}>DEPLOYED LOANS</span>
-            <DataLabelChip type={isDemoMode ? 'simulated' : 'onchain'} />
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 600, color: colors.ink.primary, marginTop: '8px', fontFamily: tokens.fonts.mono }}>
-            ${deployedCapital}
-          </div>
-        </div>
-
-        {/* Yield APY */}
-        <div
-          style={{
-            backgroundColor: colors.card,
-            border: `1px solid ${colors.border}`,
-            borderRadius: tokens.radii.lg,
-            padding: '20px'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '12px', color: colors.ink.tertiary, fontFamily: tokens.fonts.mono }}>PROJECTED APY</span>
-            <div style={{ display: 'flex', gap: '6px' }}>
-              <DemoTag text="DEMO DATA" />
-              <DataLabelChip type="simulated" />
-            </div>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 600, color: colors.state.offchain.color, marginTop: '8px', fontFamily: tokens.fonts.mono }}>
-            {estimatedApy}
-          </div>
-        </div>
-      </div>
-
-      {/* Main Form & Portfolio split */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '24px' }}>
-        {/* Deposit / Withdraw Action Panel */}
-        <div
-          style={{
-            backgroundColor: colors.card,
-            border: `1px solid ${colors.border}`,
-            borderRadius: tokens.radii.lg,
-            padding: '24px'
-          }}
-        >
-          {/* Action Tabs */}
-          <div style={{ display: 'flex', borderBottom: `1px solid ${colors.border}`, marginBottom: '20px' }}>
-            <button
-              onClick={() => setActiveTab('deposit')}
-              style={{
-                flex: 1,
-                padding: '10px',
-                backgroundColor: 'transparent',
-                border: 'none',
-                borderBottom: activeTab === 'deposit' ? `2px solid ${colors.accent}` : '2px solid transparent',
-                color: activeTab === 'deposit' ? colors.ink.primary : colors.ink.tertiary,
-                fontWeight: 600,
-                fontSize: '14px',
-                cursor: 'pointer'
-              }}
-            >
-              Deposit Capital
-            </button>
-            <button
-              onClick={() => setActiveTab('withdraw')}
-              style={{
-                flex: 1,
-                padding: '10px',
-                backgroundColor: 'transparent',
-                border: 'none',
-                borderBottom: activeTab === 'withdraw' ? `2px solid ${colors.accent}` : '2px solid transparent',
-                color: activeTab === 'withdraw' ? colors.ink.primary : colors.ink.tertiary,
-                fontWeight: 600,
-                fontSize: '14px',
-                cursor: 'pointer'
-              }}
-            >
-              Redeem Shares
-            </button>
-          </div>
-
-          {/* User Holdings Info */}
-          <div
-            style={{
-              padding: '12px 16px',
-              backgroundColor: 'rgba(255, 255, 255, 0.03)',
-              borderRadius: tokens.radii.sm,
-              marginBottom: '20px',
-              fontSize: '13px',
-              fontFamily: tokens.fonts.mono,
-              display: 'flex',
-              justify: 'space-between'
-            }}
-          >
-            <span style={{ color: colors.ink.tertiary }}>Your Shares Balance:</span>
-            <span style={{ color: colors.accent, fontWeight: 600 }}>{userShares} hvSHARE</span>
-          </div>
-
-          {statusMsg && (
-            <div
-              style={{
-                padding: '10px 14px',
-                borderRadius: tokens.radii.sm,
-                fontSize: '13px',
-                marginBottom: '16px',
-                backgroundColor: statusMsg.type === 'error' ? 'rgba(255, 143, 163, 0.12)' : 'rgba(124, 255, 178, 0.12)',
-                color: statusMsg.type === 'error' ? colors.state.simulated.color : colors.state.onchain.color,
-                border: `1px solid ${statusMsg.type === 'error' ? colors.state.simulated.border : colors.state.onchain.border}`
-              }}
-            >
-              {statusMsg.text}
-            </div>
-          )}
-
-          {activeTab === 'deposit' ? (
-            <form onSubmit={handleDepositSubmit}>
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: colors.ink.secondary, marginBottom: '8px' }}>
-                  Deposit Amount (mUSDC)
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type="number"
-                    step="any"
-                    value={depositAmount}
-                    onChange={(e) => setDepositAmount(e.target.value)}
-                    placeholder="e.g. 10000"
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      backgroundColor: colors.base,
-                      border: `1px solid ${colors.border}`,
-                      borderRadius: tokens.radii.sm,
-                      color: colors.ink.primary,
-                      fontSize: '14px',
-                      fontFamily: tokens.fonts.mono,
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setDepositAmount('10000')}
-                    style={{
-                      position: 'absolute',
-                      right: '10px',
-                      top: '10px',
-                      fontSize: '11px',
-                      fontFamily: tokens.fonts.mono,
-                      backgroundColor: colors.cardHover,
-                      border: `1px solid ${colors.border}`,
-                      color: colors.accent,
-                      padding: '3px 8px',
-                      borderRadius: '4px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    +10k
-                  </button>
+          <div className="dashboard-split dashboard-split--wide">
+            <Panel title="Active portfolio" description="The loans currently carrying deployed vault capital." chipType={isDemoMode ? 'simulated' : 'onchain'}>
+              {activeLoans.length === 0 ? (
+                <EmptyState title="No active investments" detail="Funded loans will appear after an auction is finalized." />
+              ) : (
+                <div className="dashboard-row-list">
+                  {activeLoans.slice(0, 3).map((loan) => (
+                    <InboxRow key={loan.id} statusDotColor="var(--badge-success)" title={`Loan #${loan.id} · $${loan.principal}`} subtitle={`${loan.rate}% APR · ${loan.term} months`} dataType={isDemoMode ? 'simulated' : 'onchain'} customRight={<span className="dashboard-row-status">{loan.maturityDate}</span>} />
+                  ))}
                 </div>
+              )}
+              <div className="dashboard-inline-stats">
+                <span><small>Vault TVL</small><strong>${tvl}</strong></span>
+                <span><small>Deployed</small><strong>${deployedCapital}</strong></span>
+              </div>
+            </Panel>
+
+            <Panel title="Recommended next action" description="Based on the current portfolio state." className="dashboard-panel--accent">
+              <p className="dashboard-action-copy">
+                {hasPosition
+                  ? 'Review the active investments funded by the vault and monitor their maturity status.'
+                  : 'Add capital to the vault to mint hvSHARE and participate in loan allocation.'}
+              </p>
+              <button className="dashboard-primary-button" type="button" onClick={() => setActiveSection(hasPosition ? 'investments' : 'capital')}>
+                {hasPosition ? 'Review active investments' : 'Open capital actions'}
+              </button>
+            </Panel>
+          </div>
+        </>
+      )}
+
+      {activeSection === 'capital' && (
+        <>
+          <PageIntro
+            eyebrow="Portfolio / capital"
+            title="Capital actions"
+            description="Deposit mUSDC into the vault or redeem the shares already in your wallet."
+            chipType={isDemoMode ? 'simulated' : 'onchain'}
+          />
+
+          <div className="dashboard-split">
+            <Panel title="Your vault balance" description="Current position before this transaction.">
+              <MetricGrid compact>
+                <Metric label="Deposited" value={userDeposited} unit="mUSDC" />
+                <Metric label="Share balance" value={userShares} unit="hvSHARE" tone="accent" />
+              </MetricGrid>
+            </Panel>
+
+            <Panel title="Submit transaction" description="Choose one action. Only its relevant form is shown.">
+              <div className="dashboard-tabs" role="tablist" aria-label="Capital action">
+                <button type="button" role="tab" aria-selected={capitalAction === 'deposit'} className={capitalAction === 'deposit' ? 'is-active' : ''} onClick={() => setCapitalAction('deposit')}>Deposit capital</button>
+                <button type="button" role="tab" aria-selected={capitalAction === 'withdraw'} className={capitalAction === 'withdraw' ? 'is-active' : ''} onClick={() => setCapitalAction('withdraw')}>Redeem shares</button>
               </div>
 
-              <button
-                type="submit"
-                disabled={isProcessing}
-                style={{
-                  width: '100%',
-                  padding: '14px',
-                  backgroundColor: colors.cardHover,
-                  border: `1px solid ${colors.accent}`,
-                  borderRadius: tokens.radii.sm,
-                  color: colors.ink.primary,
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  cursor: isProcessing ? 'not-allowed' : 'pointer',
-                  transition: `all ${tokens.motion.fast}`
-                }}
-              >
-                {isProcessing ? 'Confirming...' : 'Deposit mUSDC & Mint Shares'}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleWithdrawSubmit}>
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: colors.ink.secondary, marginBottom: '8px' }}>
-                  Redeem Shares (hvSHARE)
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  value={withdrawAmount}
-                  onChange={(e) => setWithdrawAmount(e.target.value)}
-                  placeholder="e.g. 5000"
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    backgroundColor: colors.base,
-                    border: `1px solid ${colors.border}`,
-                    borderRadius: tokens.radii.sm,
-                    color: colors.ink.primary,
-                    fontSize: '14px',
-                    fontFamily: tokens.fonts.mono,
-                    boxSizing: 'border-box'
-                  }}
-                />
+              {statusMsg && <Notice type={statusMsg.type}>{statusMsg.text}</Notice>}
+
+              {capitalAction === 'deposit' ? (
+                <form className="dashboard-form" onSubmit={handleDepositSubmit}>
+                  <Field label="Deposit amount (mUSDC)">
+                    <input type="number" step="any" value={depositAmount} onChange={(event) => setDepositAmount(event.target.value)} placeholder="10000" />
+                  </Field>
+                  <button className="dashboard-secondary-button dashboard-quick-value" type="button" onClick={() => setDepositAmount('10000')}>Use 10,000 mUSDC</button>
+                  <button className="dashboard-primary-button" type="submit" disabled={isProcessing}>{isProcessing ? 'Confirming...' : 'Deposit and mint shares'}</button>
+                </form>
+              ) : (
+                <form className="dashboard-form" onSubmit={handleWithdrawSubmit}>
+                  <Field label="Shares to redeem (hvSHARE)">
+                    <input type="number" step="any" value={withdrawAmount} onChange={(event) => setWithdrawAmount(event.target.value)} placeholder="5000" />
+                  </Field>
+                  <button className="dashboard-primary-button" type="submit" disabled={isProcessing}>{isProcessing ? 'Processing...' : 'Request share redemption'}</button>
+                </form>
+              )}
+            </Panel>
+          </div>
+        </>
+      )}
+
+      {activeSection === 'investments' && (
+        <>
+          <PageIntro
+            eyebrow="Investments"
+            title="Active investments"
+            description="Loans currently funded by the shared housing credit vault."
+            chipType={isDemoMode ? 'simulated' : 'onchain'}
+          />
+          <Panel title="Funded loan portfolio" description="Active principal, rate, term, and maturity status.">
+            {activeLoans.length === 0 ? (
+              <EmptyState title="No active investments" detail="Funded loans will appear here after an auction is finalized." />
+            ) : (
+              <div className="dashboard-row-list">
+                {activeLoans.map((loan) => (
+                  <InboxRow
+                    key={loan.id}
+                    statusDotColor="var(--badge-success)"
+                    title={`Loan #${loan.id} · ${loan.borrower.slice(0, 8)}...`}
+                    subtitle={`Principal $${loan.principal} · ${loan.rate}% APR · ${loan.term} months`}
+                    dataType={isDemoMode ? 'simulated' : 'onchain'}
+                    customRight={<span className="dashboard-row-status">Matures {loan.maturityDate}</span>}
+                  />
+                ))}
               </div>
+            )}
+          </Panel>
+        </>
+      )}
 
-              <button
-                type="submit"
-                disabled={isProcessing}
-                style={{
-                  width: '100%',
-                  padding: '14px',
-                  backgroundColor: colors.cardHover,
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: tokens.radii.sm,
-                  color: colors.ink.primary,
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  cursor: isProcessing ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {isProcessing ? 'Processing...' : 'Request Share Redemption'}
-              </button>
-            </form>
-          )}
-        </div>
-
-        {/* Portfolio Table of Active Loans (FR-08) */}
-        <div
-          style={{
-            backgroundColor: colors.card,
-            border: `1px solid ${colors.border}`,
-            borderRadius: tokens.radii.lg,
-            padding: '24px'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, margin: 0, color: colors.ink.primary }}>
-              Funded Loan Portfolio
-            </h3>
-            <DataLabelChip type={isDemoMode ? 'simulated' : 'onchain'} />
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {loans.map((loan) => (
-              <InboxRow
-                key={loan.id}
-                statusDotColor={colors.state.onchain.color}
-                title={`Loan #${loan.id} • ${loan.borrower.slice(0, 8)}...`}
-                subtitle={`Principal $${loan.principal} • ${loan.rate}% APR • Term ${loan.term}mo`}
-                dataType={isDemoMode ? 'simulated' : 'onchain'}
-                customRight={
-                  <span style={{ fontSize: '13px', fontFamily: tokens.fonts.mono, color: colors.state.onchain.color }}>
-                    Active (Matures {loan.maturityDate})
-                  </span>
-                }
-              />
-            ))}
-          </div>
-        </div>
-      </div>
+      {activeSection === 'activity' && (
+        <>
+          <PageIntro eyebrow="Records" title="Transaction history" description="Contract events and verifiable activity associated with the platform workflow." />
+          <TransparencyLedger embedded />
+        </>
+      )}
     </AppLayout>
   );
 }

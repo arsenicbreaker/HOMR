@@ -1,8 +1,6 @@
 import React from 'react';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { useDemoMode } from '../../context/DemoModeContext';
-import { colors } from '../../theme/colors';
-import { tokens } from '../../theme/tokens';
 import DemoTag from '../ui/DemoTag';
 
 export function WalletConnectButton() {
@@ -12,57 +10,19 @@ export function WalletConnectButton() {
   const { disconnect } = useDisconnect();
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-      {/* Demo Mode Toggle */}
+    <div className="wallet-controls">
       <button
         onClick={toggleDemoMode}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '6px 12px',
-          borderRadius: tokens.radii.sm,
-          backgroundColor: isDemoMode ? 'rgba(124, 124, 255, 0.12)' : 'rgba(255, 255, 255, 0.04)',
-          border: `1px solid ${isDemoMode ? colors.accent : colors.border}`,
-          color: isDemoMode ? colors.accent : colors.ink.secondary,
-          fontSize: '12px',
-          fontFamily: tokens.fonts.sans,
-          fontWeight: 500,
-          cursor: 'pointer',
-          transition: `all ${tokens.motion.fast}`
-        }}
+        className={`wallet-mode${isDemoMode ? ' is-active' : ''}`}
       >
-        <span
-          style={{
-            width: '6px',
-            height: '6px',
-            borderRadius: '50%',
-            backgroundColor: isDemoMode ? colors.accent : colors.ink.tertiary
-          }}
-        />
-        <span>{isDemoMode ? 'Demo Mode Active' : 'Enable Demo Mode'}</span>
+        <span className="wallet-control__dot" />
+        <span className="wallet-mode__label">{isDemoMode ? 'Demo active' : 'Enable demo'}</span>
         {isDemoMode && <DemoTag text="MOCKED" />}
       </button>
 
-      {/* Wallet Connection */}
       {isConnected ? (
-        <button
-          onClick={() => disconnect()}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '6px 12px',
-            borderRadius: tokens.radii.sm,
-            backgroundColor: colors.card,
-            border: `1px solid ${colors.border}`,
-            color: colors.ink.primary,
-            fontSize: '12px',
-            fontFamily: tokens.fonts.mono,
-            cursor: 'pointer'
-          }}
-        >
-          <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: colors.state.onchain.color }} />
+        <button onClick={() => disconnect()} className="wallet-account">
+          <span className="wallet-control__dot wallet-control__dot--connected" />
           <span>{`${address.slice(0, 6)}...${address.slice(-4)}`}</span>
         </button>
       ) : (
@@ -74,16 +34,7 @@ export function WalletConnectButton() {
               alert('No Web3 wallet extension found. Use Demo Mode or install MetaMask / BNB Wallet.');
             }
           }}
-          style={{
-            padding: '6px 14px',
-            borderRadius: tokens.radii.sm,
-            backgroundColor: colors.cardHover,
-            border: `1px solid ${colors.border}`,
-            color: colors.ink.primary,
-            fontSize: '12px',
-            fontWeight: 500,
-            cursor: 'pointer'
-          }}
+          className="wallet-account"
         >
           Connect Wallet
         </button>

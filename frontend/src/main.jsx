@@ -148,14 +148,14 @@ function HeroAppPreview() {
             <div className="hero-app-rows">
               <div className="app-row">
                 <div className="app-row-info">
-                  <span className="app-row-title">Permohonan Kredit #0412 — Cluster Residential BSD</span>
+                  <span className="app-row-title">Permohonan Kredit #0412, Cluster Residential BSD</span>
                   <span className="app-row-sub">Evaluasi Offchain Selesai · Bid Sealed #0x82f...a1</span>
                 </div>
                 <span className="state-chip state-chip--onchain">ALLOCATED ONCHAIN</span>
               </div>
               <div className="app-row">
                 <div className="app-row-info">
-                  <span className="app-row-title">Permohonan Kredit #0413 — Modern Housing Bintaro</span>
+                  <span className="app-row-title">Permohonan Kredit #0413, Modern Housing Bintaro</span>
                   <span className="app-row-sub">Verifikasi Dokumen Agunan · Risk Limit Checked</span>
                 </div>
                 <span className="state-chip state-chip--offchain">VERIFIED OFFCHAIN</span>

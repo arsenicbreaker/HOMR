@@ -1,535 +1,308 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import AppLayout from '../components/layout/AppLayout';
+import {
+  EmptyState,
+  Field,
+  Metric,
+  MetricGrid,
+  Notice,
+  PageIntro,
+  Panel,
+  PrimarySummary,
+  SummaryGrid,
+  Workflow
+} from '../components/layout/DashboardPrimitives';
 import DataLabelChip from '../components/ui/DataLabelChip';
-import DemoTag from '../components/ui/DemoTag';
 import InboxRow from '../components/ui/InboxRow';
-import ShortcutBar from '../components/ui/ShortcutBar';
+import TransparencyLedger from '../components/transparency/TransparencyLedger';
 import { useAuction } from '../hooks/useAuction';
-import { colors } from '../theme/colors';
-import { tokens } from '../theme/tokens';
+import { useLoanManager } from '../hooks/useLoanManager';
 import { fetchApplications, reviewApplication, fetchAdminStatus } from '../api/client';
 
-export function AdminPanel() {
-  const {
-    isDemoMode,
-    state: auctionState,
-    bids,
-    approveBorrower,
-    startAuction,
-    finalizeAuction
-  } = useAuction();
+const adminNavigation = [
+  { id: 'overview', icon: 'overview', label: 'Overview', meta: 'Operations', group: 'Operations' },
+  { id: 'applications', icon: 'applications', label: 'Applications', meta: 'Review queue', group: 'Credit workflow' },
+  { id: 'approvals', icon: 'approvals', label: 'Approvals', meta: 'Onchain limit', group: 'Credit workflow' },
+  { id: 'auction', icon: 'auction', label: 'Auction', meta: 'Lifecycle', group: 'Market operations' },
+  { id: 'bids', icon: 'bids', label: 'Bids', meta: 'Evaluation', group: 'Market operations' },
+  { id: 'loans', icon: 'monitoring', label: 'Loans', meta: 'Active book', group: 'Market operations' },
+  { id: 'audit', icon: 'audit', label: 'Audit', meta: 'Event trail', group: 'Administration' }
+];
 
-  // Approve borrower form
+export function AdminPanel() {
+  const { isDemoMode, state: auctionState, bids, approveBorrower, startAuction, finalizeAuction } = useAuction();
+  const { loans } = useLoanManager();
+
+  const [activeSection, setActiveSection] = useState('overview');
   const [borrowerAddress, setBorrowerAddress] = useState('0x70997970C51812dc3A010C7d01b50e0d17dc79C8');
   const [maxPrincipal, setMaxPrincipal] = useState('50000');
   const [propertyHash, setPropertyHash] = useState('0xa7f8...e4b (Jakarta Residential Cluster B2)');
-
-  // Auction config
   const [commitDuration, setCommitDuration] = useState('3600');
   const [revealDuration, setRevealDuration] = useState('3600');
-
   const [statusMsg, setStatusMsg] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-
-  // Web2 DB Applications & Admin status
   const [applications, setApplications] = useState([]);
   const [adminStatus, setAdminStatus] = useState(null);
+  const [dataStatus, setDataStatus] = useState('loading');
 
   const loadData = useCallback(async () => {
+    setDataStatus('loading');
     try {
-      const [appsRes, statusRes] = await Promise.all([
+      const [applicationsResponse, statusResponse] = await Promise.all([
         fetchApplications().catch(() => null),
         fetchAdminStatus().catch(() => null)
       ]);
-      if (appsRes?.applications) {
-        setApplications(appsRes.applications);
-      }
-      if (statusRes) {
-        setAdminStatus(statusRes);
-      }
+      if (applicationsResponse?.applications) setApplications(applicationsResponse.applications);
+      if (statusResponse) setAdminStatus(statusResponse);
+      setDataStatus('ready');
     } catch {
-      // fallback
+      setDataStatus('error');
     }
   }, []);
 
   useEffect(() => {
-    if (!isDemoMode) {
-      loadData();
-    }
+    if (!isDemoMode) loadData();
+    else setDataStatus('ready');
   }, [isDemoMode, loadData]);
 
-  const handleApproveSubmit = async (e) => {
-    e.preventDefault();
+  const withProcessing = async (loadingText, action, successText, fallbackText) => {
     setIsProcessing(true);
-    setStatusMsg({ type: 'info', text: 'Granting credit approval onchain...' });
+    setStatusMsg({ type: 'info', text: loadingText });
     try {
-      await approveBorrower(borrowerAddress, maxPrincipal, propertyHash);
-      setStatusMsg({ type: 'success', text: `Granted max principal $${maxPrincipal} to ${borrowerAddress.slice(0, 8)}...` });
-      setTimeout(loadData, 2000);
-    } catch (err) {
-      setStatusMsg({ type: 'error', text: err.message || 'Approval failed' });
+      await action();
+      setStatusMsg({ type: 'success', text: successText });
+      return true;
+    } catch (error) {
+      setStatusMsg({ type: 'error', text: error.message || fallbackText });
+      return false;
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleReviewAppApi = async (app, decision) => {
-    setIsProcessing(true);
-    setStatusMsg({ type: 'info', text: `Submitting review decision (${decision}) via Admin API...` });
-    try {
-      const maxPrin = decision === 'APPROVED' ? (app.requestedAmount || '50000000000').toString() : undefined;
-      await reviewApplication(app.id, {
-        decision,
-        maxPrincipal: maxPrin,
+  const handleApproveSubmit = async (event) => {
+    event.preventDefault();
+    const completed = await withProcessing(
+      'Granting credit approval onchain...',
+      () => approveBorrower(borrowerAddress, maxPrincipal, propertyHash),
+      `Granted a ${maxPrincipal} mUSDC limit to ${borrowerAddress.slice(0, 8)}...`,
+      'Approval failed.'
+    );
+    if (completed && !isDemoMode) setTimeout(loadData, 2000);
+  };
+
+  const handleReviewApplication = async (application) => {
+    const completed = await withProcessing(
+      'Submitting the review decision through the Admin API...',
+      () => reviewApplication(application.id, {
+        decision: 'APPROVED',
+        maxPrincipal: (application.requestedAmount || '50000000000').toString(),
         reviewedBy: 'Credit Manager Admin',
-        reviewNote: `Approved for property collateral ${app.propertyHash.slice(0, 16)}...`
-      });
-      setStatusMsg({
-        type: 'success',
-        text: `Application #${app.id.slice(0, 8)} successfully ${decision.toLowerCase()}!`
-      });
-      loadData();
-    } catch (err) {
-      setStatusMsg({ type: 'error', text: err.message || 'Review failed' });
-    } finally {
-      setIsProcessing(false);
-    }
+        reviewNote: `Approved for property collateral ${application.propertyHash.slice(0, 16)}...`
+      }),
+      `Application #${application.id.slice(0, 8)} approved.`,
+      'Application review failed.'
+    );
+    if (completed) loadData();
   };
 
   const handleStartAuction = async () => {
-    setIsProcessing(true);
-    setStatusMsg({ type: 'info', text: 'Initiating new credit auction onchain...' });
-    try {
-      await startAuction(parseInt(commitDuration), parseInt(revealDuration));
-      setStatusMsg({ type: 'success', text: 'Auction started! Commit phase is active.' });
-    } catch (err) {
-      setStatusMsg({ type: 'error', text: err.message || 'Start auction failed' });
-    } finally {
-      setIsProcessing(false);
-    }
+    await withProcessing(
+      'Starting a new credit auction onchain...',
+      () => startAuction(parseInt(commitDuration, 10), parseInt(revealDuration, 10)),
+      'Auction started. The commit phase is active.',
+      'Auction start failed.'
+    );
   };
 
   const handleFinalizeAuction = async () => {
-    setIsProcessing(true);
-    setStatusMsg({ type: 'info', text: 'Sorting revealed bids and executing LoanManager creation...' });
-    try {
-      await finalizeAuction();
-      setStatusMsg({ type: 'success', text: 'Auction finalized! Loan created for winning bid.' });
-    } catch (err) {
-      setStatusMsg({ type: 'error', text: err.message || 'Finalize auction failed' });
-    } finally {
-      setIsProcessing(false);
-    }
+    await withProcessing(
+      'Finalizing revealed bids and creating the allocated loan...',
+      finalizeAuction,
+      'Auction finalized and capital allocated.',
+      'Auction finalization failed.'
+    );
+  };
+
+  const pendingApplications = applications.filter((application) => application.status === 'PENDING');
+  const activeLoans = loans.filter((loan) => loan.isActive);
+  const auctionStep = auctionState === 'Created' ? 0 : auctionState === 'CommitPhase' ? 1 : auctionState === 'RevealPhase' ? 2 : 3;
+
+  const nextAction = pendingApplications.length > 0
+    ? { section: 'applications', label: 'Review pending applications', detail: `${pendingApplications.length} application${pendingApplications.length === 1 ? '' : 's'} need a credit decision.` }
+    : auctionState === 'RevealPhase'
+      ? { section: 'auction', label: 'Review auction controls', detail: 'The reveal phase is active. Finalize only after the phase is complete.' }
+      : { section: 'bids', label: 'Monitor current bids', detail: 'Review submitted bids and the current auction state.' };
+
+  const prefillApproval = (application) => {
+    setBorrowerAddress(application.applicant?.walletAddress || '');
+    setMaxPrincipal((Number(application.requestedAmount) / 1e6).toString());
+    setPropertyHash(application.propertyHash);
+    setActiveSection('approvals');
   };
 
   return (
-    <AppLayout>
-      {/* Header */}
-      <div style={{ marginBottom: tokens.spacing.xl }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <h1 style={{ fontSize: '28px', fontWeight: 600, color: colors.ink.primary, margin: 0 }}>
-                Credit Manager & Admin Panel
-              </h1>
-              <DataLabelChip type={isDemoMode ? 'simulated' : 'onchain'} />
-            </div>
-            <p style={{ fontSize: '14px', color: colors.ink.tertiary, marginTop: '6px' }}>
-              Underwrite offchain housing deeds, approve borrower credit limits, and control auction execution cycles.
-            </p>
-          </div>
-          <ShortcutBar shortcuts={[{ key: 'A', label: 'Approve' }, { key: 'F', label: 'Finalize' }]} />
-        </div>
-      </div>
+    <AppLayout
+      roleLabel="Credit Manager"
+      navItems={adminNavigation}
+      activeSection={activeSection}
+      onSectionChange={setActiveSection}
+      workflowLabel={`Auction: ${auctionState}`}
+      workflowDetail={nextAction.detail}
+    >
+      {statusMsg && <Notice type={statusMsg.type}>{statusMsg.text}</Notice>}
 
-      {/* Admin Signer Status Banner (when connected to backend) */}
-      {!isDemoMode && adminStatus && (
-        <div
-          style={{
-            padding: '14px 20px',
-            borderRadius: tokens.radii.md,
-            fontSize: '12px',
-            fontFamily: tokens.fonts.mono,
-            marginBottom: tokens.spacing.lg,
-            backgroundColor: 'rgba(124, 124, 255, 0.08)',
-            border: `1px solid ${colors.border}`,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '12px'
-          }}
-        >
-          <div>
-            <span style={{ color: colors.ink.tertiary }}>Admin Signer: </span>
-            <span style={{ color: colors.accent }}>{adminStatus.adminAddress}</span>
-            <span style={{ marginLeft: '12px', color: colors.ink.secondary }}>
-              ({adminStatus.balanceBnb} BNB)
-            </span>
+      {activeSection === 'overview' && (
+        <>
+          <PageIntro
+            eyebrow="Credit operations"
+            title="Platform overview"
+            description="A concise view of the review queue, auction lifecycle, active loan book, and next operational action."
+            chipType={isDemoMode ? 'simulated' : 'onchain'}
+          />
+
+          {adminStatus && !isDemoMode && (
+            <Notice>Admin signer {adminStatus.adminAddress} · {adminStatus.balanceBnb} BNB · Chain ID {adminStatus.chainId}</Notice>
+          )}
+
+          <SummaryGrid>
+            <PrimarySummary eyebrow="Operational queue" value={pendingApplications.length} unit="applications awaiting review" detail={`${applications.length} total applications in the credit database`} />
+            <Metric label="Auction state" value={auctionState} unit="current lifecycle" tone="accent" />
+            <Metric label="Submitted bids" value={bids.length} unit="current auction" />
+            <Metric label="Active loans" value={activeLoans.length} unit="monitored" tone="success" />
+          </SummaryGrid>
+
+          <div className="dashboard-split dashboard-split--wide">
+            <Panel title="Auction workflow" description="The current cycle and completed phases.">
+              <Workflow
+                current={auctionStep}
+                steps={[
+                  { label: 'Configure auction', detail: 'Set commit and reveal durations.' },
+                  { label: 'Commit phase', detail: 'Approved borrowers submit sealed commitments.' },
+                  { label: 'Reveal phase', detail: 'Borrowers reveal parameters for validation.' },
+                  { label: 'Allocation', detail: 'Finalize valid bids and create the winning loan.' }
+                ]}
+              />
+            </Panel>
+            <Panel title="Recommended next action" description="The highest-priority operational task." className="dashboard-panel--accent">
+              <p className="dashboard-action-copy">{nextAction.detail}</p>
+              <button className="dashboard-primary-button" type="button" onClick={() => setActiveSection(nextAction.section)}>{nextAction.label}</button>
+            </Panel>
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <span style={{ color: colors.state.onchain.color }}>Chain ID: {adminStatus.chainId}</span>
-            <span style={{ color: colors.ink.quaternary }}>•</span>
-            <span style={{ color: colors.ink.tertiary }}>Contracts Deployed</span>
-          </div>
-        </div>
+        </>
       )}
 
-      {statusMsg && (
-        <div
-          style={{
-            padding: '12px 16px',
-            borderRadius: tokens.radii.sm,
-            fontSize: '13px',
-            marginBottom: tokens.spacing.lg,
-            backgroundColor: statusMsg.type === 'error' ? 'rgba(255, 143, 163, 0.12)' : 'rgba(124, 255, 178, 0.12)',
-            color: statusMsg.type === 'error' ? colors.state.simulated.color : colors.state.onchain.color,
-            border: `1px solid ${statusMsg.type === 'error' ? colors.state.simulated.border : colors.state.onchain.border}`
-          }}
-        >
-          {statusMsg.text}
-        </div>
+      {activeSection === 'applications' && (
+        <>
+          <PageIntro eyebrow="Credit workflow" title="Borrower applications" description="Review financing requests from the offchain credit database before granting an onchain limit." chipType="offchain" chipLabel="Private review queue" />
+          <Panel title="Application queue" description="Application details remain offchain until a separate credit approval is granted.">
+            {dataStatus === 'loading' ? (
+              <Notice>Loading applications...</Notice>
+            ) : dataStatus === 'error' ? (
+              <Notice type="error">Applications could not be loaded. Retry from the platform overview.</Notice>
+            ) : applications.length === 0 ? (
+              <EmptyState title="No applications in the queue" detail="New borrower applications will appear here for review." />
+            ) : (
+              <div className="dashboard-application-list">
+                {applications.map((application) => (
+                  <article className="dashboard-application-row" key={application.id}>
+                    <div>
+                      <div className="dashboard-application-row__title">
+                        <strong>{application.applicant?.displayName || 'Applicant'}</strong>
+                        <DataLabelChip type={application.status === 'APPROVED' ? 'onchain' : application.status === 'REJECTED' ? 'simulated' : 'pending'} label={application.status} />
+                      </div>
+                      <p>{application.applicant?.walletAddress}</p>
+                      <small>Property: {application.propertyHash} · Requested ${(Number(application.requestedAmount) / 1e6).toLocaleString()} USDC at {application.requestedRate / 100}%</small>
+                    </div>
+                    {application.status === 'PENDING' && (
+                      <div className="dashboard-row-actions">
+                        <button className="dashboard-secondary-button" type="button" onClick={() => prefillApproval(application)}>Prepare onchain approval</button>
+                        <button className="dashboard-primary-button" type="button" disabled={isProcessing} onClick={() => handleReviewApplication(application)}>Approve database review</button>
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </div>
+            )}
+          </Panel>
+        </>
       )}
 
-      {/* Grid: Approve Borrower & Auction Controls */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px', marginBottom: tokens.spacing.xl }}>
-        {/* Approve Borrower Form */}
-        <div
-          style={{
-            backgroundColor: colors.card,
-            border: `1px solid ${colors.border}`,
-            borderRadius: tokens.radii.lg,
-            padding: '24px'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, color: colors.ink.primary, margin: 0 }}>
-              Underwrite & Approve Borrower Limit
-            </h3>
-            <DataLabelChip type="offchain" label="Offchain Underwriting" />
-          </div>
-
-          <form onSubmit={handleApproveSubmit}>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.ink.secondary, marginBottom: '4px' }}>
-                Borrower EVM Address
-              </label>
-              <input
-                type="text"
-                value={borrowerAddress}
-                onChange={(e) => setBorrowerAddress(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  backgroundColor: colors.base,
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: tokens.radii.sm,
-                  color: colors.ink.primary,
-                  fontFamily: tokens.fonts.mono,
-                  boxSizing: 'border-box'
-                }}
-              />
-            </div>
-
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.ink.secondary, marginBottom: '4px' }}>
-                Maximum Approved Principal (mUSDC)
-              </label>
-              <input
-                type="number"
-                value={maxPrincipal}
-                onChange={(e) => setMaxPrincipal(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  backgroundColor: colors.base,
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: tokens.radii.sm,
-                  color: colors.ink.primary,
-                  fontFamily: tokens.fonts.mono,
-                  boxSizing: 'border-box'
-                }}
-              />
-            </div>
-
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: colors.ink.secondary, marginBottom: '4px' }}>
-                Verified Property Hash / Registry ID
-              </label>
-              <input
-                type="text"
-                value={propertyHash}
-                onChange={(e) => setPropertyHash(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  backgroundColor: colors.base,
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: tokens.radii.sm,
-                  color: colors.ink.primary,
-                  fontFamily: tokens.fonts.mono,
-                  boxSizing: 'border-box'
-                }}
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={isProcessing}
-              style={{
-                width: '100%',
-                padding: '12px',
-                backgroundColor: colors.cardHover,
-                border: `1px solid ${colors.accent}`,
-                borderRadius: tokens.radii.sm,
-                color: colors.ink.primary,
-                fontWeight: 600,
-                cursor: isProcessing ? 'not-allowed' : 'pointer'
-              }}
-            >
-              Grant Credit Approval Onchain
-            </button>
-          </form>
-        </div>
-
-        {/* Auction Lifecycle Control */}
-        <div
-          style={{
-            backgroundColor: colors.card,
-            border: `1px solid ${colors.border}`,
-            borderRadius: tokens.radii.lg,
-            padding: '24px'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, color: colors.ink.primary, margin: 0 }}>
-              Auction Lifecycle Control
-            </h3>
-            <DataLabelChip type={isDemoMode ? 'simulated' : 'onchain'} label={`State: ${auctionState}`} />
-          </div>
-
-          <div style={{ marginBottom: '20px' }}>
-            <div style={{ fontSize: '13px', color: colors.ink.secondary, marginBottom: '8px' }}>
-              Phase Configuration (Seconds)
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: colors.ink.tertiary }}>Commit Duration</label>
-                <input
-                  type="number"
-                  value={commitDuration}
-                  onChange={(e) => setCommitDuration(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    backgroundColor: colors.base,
-                    border: `1px solid ${colors.border}`,
-                    borderRadius: tokens.radii.sm,
-                    color: colors.ink.primary,
-                    fontFamily: tokens.fonts.mono,
-                    boxSizing: 'border-box'
-                  }}
-                />
+      {activeSection === 'approvals' && (
+        <>
+          <PageIntro eyebrow="Credit workflow" title="Credit approvals" description="Grant the verified borrower address a maximum principal tied to the reviewed property reference." chipType="onchain" chipLabel="Contract write" />
+          <Panel title="Grant borrower limit" description="Use values from a completed offchain assessment. This preserves the existing approval transaction.">
+            <form className="dashboard-form" onSubmit={handleApproveSubmit}>
+              <Field label="Borrower EVM address"><input type="text" value={borrowerAddress} onChange={(event) => setBorrowerAddress(event.target.value)} /></Field>
+              <div className="dashboard-form-grid dashboard-form-grid--two">
+                <Field label="Maximum approved principal (mUSDC)"><input type="number" value={maxPrincipal} onChange={(event) => setMaxPrincipal(event.target.value)} /></Field>
+                <Field label="Verified property hash / registry ID"><input type="text" value={propertyHash} onChange={(event) => setPropertyHash(event.target.value)} /></Field>
               </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', color: colors.ink.tertiary }}>Reveal Duration</label>
-                <input
-                  type="number"
-                  value={revealDuration}
-                  onChange={(e) => setRevealDuration(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    backgroundColor: colors.base,
-                    border: `1px solid ${colors.border}`,
-                    borderRadius: tokens.radii.sm,
-                    color: colors.ink.primary,
-                    fontFamily: tokens.fonts.mono,
-                    boxSizing: 'border-box'
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <button
-              onClick={handleStartAuction}
-              disabled={isProcessing}
-              style={{
-                width: '100%',
-                padding: '12px',
-                backgroundColor: colors.cardHover,
-                border: `1px solid ${colors.border}`,
-                borderRadius: tokens.radii.sm,
-                color: colors.ink.primary,
-                fontWeight: 600,
-                cursor: isProcessing ? 'not-allowed' : 'pointer'
-              }}
-            >
-              ▶ Start New Auction Cycle
-            </button>
-
-            <button
-              onClick={handleFinalizeAuction}
-              disabled={isProcessing}
-              style={{
-                width: '100%',
-                padding: '12px',
-                backgroundColor: colors.cardHover,
-                border: `1px solid ${colors.state.onchain.color}`,
-                borderRadius: tokens.radii.sm,
-                color: colors.state.onchain.color,
-                fontWeight: 600,
-                cursor: isProcessing ? 'not-allowed' : 'pointer'
-              }}
-            >
-              ✓ Finalize Auction & Allocate Capital
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Applications Queue from Web2 Database (when available) */}
-      {applications.length > 0 && (
-        <div
-          style={{
-            backgroundColor: colors.card,
-            border: `1px solid ${colors.border}`,
-            borderRadius: tokens.radii.lg,
-            padding: '24px',
-            marginBottom: tokens.spacing.xl
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, color: colors.ink.primary, margin: 0 }}>
-              Borrower Credit Applications (Web2 Database)
-            </h3>
-            <DataLabelChip type="offchain" label="Database Queue" />
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {applications.map((app) => (
-              <div
-                key={app.id}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '12px 16px',
-                  backgroundColor: colors.base,
-                  borderRadius: tokens.radii.sm,
-                  border: `1px solid ${colors.border}`
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: colors.ink.primary }}>
-                    {app.applicant?.displayName || 'Applicant'} • {app.applicant?.walletAddress?.slice(0, 10)}...
-                  </div>
-                  <div style={{ fontSize: '11px', color: colors.ink.tertiary, marginTop: '2px', fontFamily: tokens.fonts.mono }}>
-                    Property: {app.propertyHash} • Requested: ${(Number(app.requestedAmount) / 1e6).toLocaleString()} USDC @ {(app.requestedRate / 100)}%
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span
-                    style={{
-                      fontSize: '11px',
-                      fontFamily: tokens.fonts.mono,
-                      color:
-                        app.status === 'APPROVED'
-                          ? colors.state.onchain.color
-                          : app.status === 'REJECTED'
-                          ? colors.state.simulated.color
-                          : colors.state.offchain.color
-                    }}
-                  >
-                    {app.status}
-                  </span>
-
-                  {app.status === 'PENDING' && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setBorrowerAddress(app.applicant?.walletAddress || '');
-                          setMaxPrincipal((Number(app.requestedAmount) / 1e6).toString());
-                          setPropertyHash(app.propertyHash);
-                        }}
-                        style={{
-                          padding: '4px 10px',
-                          backgroundColor: 'transparent',
-                          border: `1px solid ${colors.border}`,
-                          color: colors.ink.primary,
-                          borderRadius: tokens.radii.sm,
-                          fontSize: '11px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Pre-fill Form
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleReviewAppApi(app, 'APPROVED')}
-                        style={{
-                          padding: '4px 10px',
-                          backgroundColor: 'rgba(124, 255, 178, 0.1)',
-                          border: `1px solid ${colors.state.onchain.color}`,
-                          color: colors.state.onchain.color,
-                          borderRadius: tokens.radii.sm,
-                          fontSize: '11px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Approve via API
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+              <button className="dashboard-primary-button" type="submit" disabled={isProcessing}>{isProcessing ? 'Granting approval...' : 'Grant credit approval onchain'}</button>
+            </form>
+          </Panel>
+        </>
       )}
 
-      {/* Bids Evaluation Table */}
-      <div
-        style={{
-          backgroundColor: colors.card,
-          border: `1px solid ${colors.border}`,
-          borderRadius: tokens.radii.lg,
-          padding: '24px'
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 600, color: colors.ink.primary, margin: 0 }}>
-            Auction Bids Evaluation Queue
-          </h3>
-          <DataLabelChip type={isDemoMode ? 'simulated' : 'onchain'} />
-        </div>
+      {activeSection === 'auction' && (
+        <>
+          <PageIntro eyebrow="Market operations" title="Auction control" description="Configure and advance the existing commit-reveal auction lifecycle." chipType={isDemoMode ? 'simulated' : 'onchain'} chipLabel={`State: ${auctionState}`} />
+          <div className="dashboard-split">
+            <Panel title="Phase configuration" description="Durations are submitted in seconds when a new cycle starts.">
+              <div className="dashboard-form-grid dashboard-form-grid--two">
+                <Field label="Commit duration (seconds)"><input type="number" value={commitDuration} onChange={(event) => setCommitDuration(event.target.value)} /></Field>
+                <Field label="Reveal duration (seconds)"><input type="number" value={revealDuration} onChange={(event) => setRevealDuration(event.target.value)} /></Field>
+              </div>
+              <button className="dashboard-primary-button" type="button" disabled={isProcessing} onClick={handleStartAuction}>{isProcessing ? 'Starting...' : 'Start new auction cycle'}</button>
+            </Panel>
+            <Panel title="Finalize allocation" description="Finalize revealed bids and create the allocated loan through Loan Manager." className="dashboard-panel--accent">
+              <p className="dashboard-action-copy">Current phase: {auctionState}. Finalization preserves the existing deterministic allocation flow.</p>
+              <button className="dashboard-primary-button" type="button" disabled={isProcessing} onClick={handleFinalizeAuction}>{isProcessing ? 'Finalizing...' : 'Finalize auction and allocate capital'}</button>
+            </Panel>
+          </div>
+        </>
+      )}
 
-        {bids.length === 0 ? (
-          <p style={{ fontSize: '13px', color: colors.ink.tertiary, margin: 0 }}>
-            No bids submitted yet for the current auction.
-          </p>
-        ) : (
-          bids.map((bid, idx) => (
-            <InboxRow
-              key={idx}
-              statusDotColor={colors.accent}
-              title={`${bid.borrower.slice(0, 10)}... • Requested $${bid.amount} @ ${bid.rate}% APR`}
-              subtitle={`Property: ${bid.property} • Term: ${bid.term} Months`}
-              dataType={isDemoMode ? 'simulated' : 'onchain'}
-              customRight={
-                <span style={{ fontSize: '12px', fontFamily: tokens.fonts.mono, color: colors.state.onchain.color }}>
-                  {bid.status}
-                </span>
-              }
-            />
-          ))
-        )}
-      </div>
+      {activeSection === 'bids' && (
+        <>
+          <PageIntro eyebrow="Market operations" title="Bid monitoring" description="Monitor commitments and revealed terms for the current auction." chipType={isDemoMode ? 'simulated' : 'onchain'} />
+          <Panel title="Bid evaluation queue" description="Status and terms reported by the existing auction data source.">
+            {bids.length === 0 ? (
+              <EmptyState title="No bids submitted" detail="Borrower bids will appear after commitments enter the current auction." />
+            ) : (
+              <div className="dashboard-row-list">
+                {bids.map((bid, index) => (
+                  <InboxRow key={`${bid.borrower}-${index}`} statusDotColor="var(--primary)" title={`${bid.borrower.slice(0, 10)}... · $${bid.amount} at ${bid.rate}% APR`} subtitle={`Property: ${bid.property} · Term: ${bid.term} months`} dataType={isDemoMode ? 'simulated' : 'onchain'} customRight={<span className="dashboard-row-status">{bid.status}</span>} />
+                ))}
+              </div>
+            )}
+          </Panel>
+        </>
+      )}
+
+      {activeSection === 'loans' && (
+        <>
+          <PageIntro eyebrow="Market operations" title="Loan monitoring" description="Track loans created after auction allocation without changing servicing logic." chipType={isDemoMode ? 'simulated' : 'onchain'} />
+          <Panel title="Active loan book" description="Principal, borrower, pricing, and maturity for monitored loans.">
+            {activeLoans.length === 0 ? (
+              <EmptyState title="No active loans" detail="Loans will appear here when an auction allocation creates them." />
+            ) : (
+              <div className="dashboard-row-list">
+                {activeLoans.map((loan) => (
+                  <InboxRow key={loan.id} statusDotColor="var(--badge-success)" title={`Loan #${loan.id} · ${loan.borrower.slice(0, 10)}...`} subtitle={`Principal $${loan.principal} · ${loan.rate}% APR · ${loan.term} months`} dataType={isDemoMode ? 'simulated' : 'onchain'} customRight={<span className="dashboard-row-status">Matures {loan.maturityDate}</span>} />
+                ))}
+              </div>
+            )}
+          </Panel>
+        </>
+      )}
+
+      {activeSection === 'audit' && (
+        <>
+          <PageIntro eyebrow="Administration" title="Administrative audit" description="Contract events, credit decisions, and workflow evidence in one traceable record." />
+          <TransparencyLedger embedded />
+        </>
+      )}
     </AppLayout>
   );
 }

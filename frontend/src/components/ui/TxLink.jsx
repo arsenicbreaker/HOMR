@@ -1,10 +1,8 @@
 import React from 'react';
-import { colors } from '../../theme/colors';
-import { tokens } from '../../theme/tokens';
 import { CHAIN_CONFIG } from '../../contracts/addresses';
 
 export function TxLink({ hash, label }) {
-  if (!hash) return <span style={{ color: colors.ink.quaternary }}>-</span>;
+  if (!hash) return <span className="tx-link__empty">-</span>;
 
   const truncated = `${hash.slice(0, 6)}...${hash.slice(-4)}`;
   const url = `${CHAIN_CONFIG.blockExplorer}/tx/${hash}`;
@@ -14,16 +12,7 @@ export function TxLink({ hash, label }) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      style={{
-        fontFamily: tokens.fonts.mono,
-        fontSize: '12px',
-        color: colors.accent,
-        textDecoration: 'none',
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '4px',
-        transition: `opacity ${tokens.motion.fast}`
-      }}
+      className="tx-link"
       title={hash}
     >
       <span>{label || truncated}</span>

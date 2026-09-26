@@ -27,35 +27,38 @@ describe('Deposit Form Validation & Execution', () => {
     );
   };
 
-  it('renders deposit input and initial vault shares', () => {
+  it('renders deposit input and initial vault shares in capital actions', () => {
     renderDashboard();
-    expect(screen.getByPlaceholderText('e.g. 10000')).toBeTruthy();
-    expect(screen.getByText(/Your Shares Balance:/i)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Capital.*Deposit/ }));
+    expect(screen.getByLabelText('Deposit amount (mUSDC)')).toBeTruthy();
+    expect(screen.getAllByText('25,000.00').length).toBeGreaterThan(0);
   });
 
   it('displays error when submitting 0 or negative deposit amount', async () => {
     renderDashboard();
-    const input = screen.getByPlaceholderText('e.g. 10000');
-    const submitBtn = screen.getByText('Deposit mUSDC & Mint Shares');
+    fireEvent.click(screen.getByRole('button', { name: /Capital.*Deposit/ }));
+    const input = screen.getByLabelText('Deposit amount (mUSDC)');
+    const submitBtn = screen.getByRole('button', { name: 'Deposit and mint shares' });
 
     fireEvent.change(input, { target: { value: '0' } });
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
-      expect(screen.getByText('Deposit amount must be greater than 0')).toBeTruthy();
+      expect(screen.getByText('Deposit amount must be greater than 0.')).toBeTruthy();
     });
   });
 
   it('updates vault shares and TVL upon successful demo deposit', async () => {
     renderDashboard();
-    const input = screen.getByPlaceholderText('e.g. 10000');
-    const submitBtn = screen.getByText('Deposit mUSDC & Mint Shares');
+    fireEvent.click(screen.getByRole('button', { name: /Capital.*Deposit/ }));
+    const input = screen.getByLabelText('Deposit amount (mUSDC)');
+    const submitBtn = screen.getByRole('button', { name: 'Deposit and mint shares' });
 
     fireEvent.change(input, { target: { value: '5000' } });
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
-      expect(screen.getByText('Successfully deposited 5000 mUSDC into Vault!')).toBeTruthy();
+      expect(screen.getByText('Deposited 5000 mUSDC into the vault.')).toBeTruthy();
     });
   });
 });
