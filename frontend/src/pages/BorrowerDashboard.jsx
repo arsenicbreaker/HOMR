@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAccount } from 'wagmi';
 import AppLayout from '../components/layout/AppLayout';
 import DataLabelChip from '../components/ui/DataLabelChip';
 import DemoTag from '../components/ui/DemoTag';
@@ -8,10 +9,20 @@ import { useAuction } from '../hooks/useAuction';
 import { useLoanManager } from '../hooks/useLoanManager';
 import { colors } from '../theme/colors';
 import { tokens } from '../theme/tokens';
+import { createApplication } from '../api/client';
 
 export function BorrowerDashboard() {
   const { isDemoMode, state: auctionState, userApproval, commitBid, revealBid } = useAuction();
   const { loans, repayLoan } = useLoanManager();
+  const { address } = useAccount();
+
+  // Application form inputs
+  const [showAppForm, setShowAppForm] = useState(false);
+  const [appName, setAppName] = useState('Budi Pratama');
+  const [appProperty, setAppProperty] = useState('0xa7f8...e4b (Jakarta Residential Cluster B2)');
+  const [appAmount, setAppAmount] = useState('50000');
+  const [appRate, setAppRate] = useState('9.5');
+  const [appTerm, setAppTerm] = useState('12');
 
   // Commit form inputs
   const [bidAmount, setBidAmount] = useState('50000');
@@ -24,6 +35,32 @@ export function BorrowerDashboard() {
 
   const [statusMsg, setStatusMsg] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleApplicationSubmit = async (e) => {
+    e.preventDefault();
+    setIsProcessing(true);
+    setStatusMsg({ type: 'info', text: 'Submitting loan application to credit database...' });
+    try {
+      const borrowerWallet = address || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8';
+      await createApplication({
+        walletAddress: borrowerWallet,
+        displayName: appName,
+        propertyHash: appProperty,
+        requestedAmount: (parseFloat(appAmount) * 1e6).toString(),
+        requestedRate: Math.round(parseFloat(appRate) * 100),
+        requestedTerm: parseInt(appTerm) * 30 * 86400
+      });
+      setStatusMsg({
+        type: 'success',
+        text: 'Financing application submitted successfully! Credit Manager will review offchain deeds.'
+      });
+      setShowAppForm(false);
+    } catch (err) {
+      setStatusMsg({ type: 'error', text: err.message || 'Application submission failed' });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const handleCommitSubmit = async (e) => {
     e.preventDefault();
@@ -130,9 +167,25 @@ export function BorrowerDashboard() {
               {userApproval?.isApproved ? 'Approved Credit Limit' : 'Pending Credit Review'}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <DataLabelChip type="offchain" label="Deed Verified offchain" />
             <DataLabelChip type={userApproval?.isApproved ? 'onchain' : 'pending'} />
+            <button
+              type="button"
+              onClick={() => setShowAppForm(!showAppForm)}
+              style={{
+                marginLeft: '8px',
+                padding: '6px 12px',
+                backgroundColor: 'rgba(124, 124, 255, 0.12)',
+                border: `1px solid ${colors.accent}`,
+                borderRadius: tokens.radii.sm,
+                color: colors.ink.primary,
+                fontSize: '12px',
+                cursor: 'pointer'
+              }}
+            >
+              {showAppForm ? 'Close Form' : 'Apply for Credit'}
+            </button>
           </div>
         </div>
 
@@ -170,6 +223,153 @@ export function BorrowerDashboard() {
           </div>
         )}
       </div>
+
+      {/* Offchain Application Form Accordion */}
+      {showAppForm && (
+        <div
+          style={{
+            backgroundColor: colors.card,
+            border: `1px solid ${colors.accent}`,
+            borderRadius: tokens.radii.lg,
+            padding: '24px',
+            marginBottom: tokens.spacing.xl
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, color: colors.ink.primary, margin: 0 }}>
+              Apply for Credit Line (Offchain Collateral Evaluation)
+            </h3>
+            <DataLabelChip type="offchain" label="Web2 DB + Offchain Review" />
+          </div>
+
+          <form onSubmit={handleApplicationSubmit}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '12px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: colors.ink.secondary, marginBottom: '4px' }}>
+                  Applicant Full Name
+                </label>
+                <input
+                  type="text"
+                  value={appName}
+                  onChange={(e) => setAppName(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    backgroundColor: colors.base,
+                    border: `1px solid ${colors.border}`,
+                    borderRadius: tokens.radii.sm,
+                    color: colors.ink.primary,
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: colors.ink.secondary, marginBottom: '4px' }}>
+                  Property / Deed Reference (SHM / BPN)
+                </label>
+                <input
+                  type="text"
+                  value={appProperty}
+                  onChange={(e) => setAppProperty(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    backgroundColor: colors.base,
+                    border: `1px solid ${colors.border}`,
+                    borderRadius: tokens.radii.sm,
+                    color: colors.ink.primary,
+                    fontFamily: tokens.fonts.mono,
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: colors.ink.secondary, marginBottom: '4px' }}>
+                  Requested Principal (mUSDC)
+                </label>
+                <input
+                  type="number"
+                  value={appAmount}
+                  onChange={(e) => setAppAmount(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    backgroundColor: colors.base,
+                    border: `1px solid ${colors.border}`,
+                    borderRadius: tokens.radii.sm,
+                    color: colors.ink.primary,
+                    fontFamily: tokens.fonts.mono,
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: colors.ink.secondary, marginBottom: '4px' }}>
+                  Requested Rate (% APR)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={appRate}
+                  onChange={(e) => setAppRate(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    backgroundColor: colors.base,
+                    border: `1px solid ${colors.border}`,
+                    borderRadius: tokens.radii.sm,
+                    color: colors.ink.primary,
+                    fontFamily: tokens.fonts.mono,
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: colors.ink.secondary, marginBottom: '4px' }}>
+                  Requested Term (Months)
+                </label>
+                <input
+                  type="number"
+                  value={appTerm}
+                  onChange={(e) => setAppTerm(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    backgroundColor: colors.base,
+                    border: `1px solid ${colors.border}`,
+                    borderRadius: tokens.radii.sm,
+                    color: colors.ink.primary,
+                    fontFamily: tokens.fonts.mono,
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isProcessing}
+              style={{
+                padding: '12px 24px',
+                backgroundColor: colors.cardHover,
+                border: `1px solid ${colors.accent}`,
+                borderRadius: tokens.radii.sm,
+                color: colors.ink.primary,
+                fontWeight: 600,
+                cursor: isProcessing ? 'not-allowed' : 'pointer'
+              }}
+            >
+              Submit Application for Credit Review
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* Auction Commit-Reveal Interactive Section */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: tokens.spacing.xl }}>

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { DemoModeProvider } from '../context/DemoModeContext';
 import BorrowerDashboard from '../pages/BorrowerDashboard';
@@ -9,8 +9,12 @@ import BorrowerDashboard from '../pages/BorrowerDashboard';
 vi.mock('wagmi', () => ({
   useAccount: () => ({ address: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', isConnected: true }),
   useReadContract: () => ({ data: null }),
-  useWriteContract: () => ({ writeContractAsync: vi.fn() })
+  useWriteContract: () => ({ writeContractAsync: vi.fn() }),
+  useConnect: () => ({ connect: vi.fn(), connectors: [] }),
+  useDisconnect: () => ({ disconnect: vi.fn() })
 }));
+
+afterEach(cleanup);
 
 describe('Auction State Transitions & Commit/Reveal Bidding', () => {
   const renderBorrower = () => {

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { DemoModeProvider } from '../context/DemoModeContext';
 import InvestorDashboard from '../pages/InvestorDashboard';
@@ -9,8 +9,12 @@ import InvestorDashboard from '../pages/InvestorDashboard';
 vi.mock('wagmi', () => ({
   useAccount: () => ({ address: '0x123', isConnected: true }),
   useReadContract: () => ({ data: null }),
-  useWriteContract: () => ({ writeContractAsync: vi.fn() })
+  useWriteContract: () => ({ writeContractAsync: vi.fn() }),
+  useConnect: () => ({ connect: vi.fn(), connectors: [] }),
+  useDisconnect: () => ({ disconnect: vi.fn() })
 }));
+
+afterEach(cleanup);
 
 describe('Deposit Form Validation & Execution', () => {
   const renderDashboard = () => {

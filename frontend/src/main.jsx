@@ -3,6 +3,13 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import './styles.css';
 
+import Web3Provider from './context/Web3Provider';
+import { DemoModeProvider } from './context/DemoModeContext';
+import InvestorDashboard from './pages/InvestorDashboard';
+import BorrowerDashboard from './pages/BorrowerDashboard';
+import AdminPanel from './pages/AdminPanel';
+import { API_BASE, fetchVault, fetchLoans, fetchEvents } from './api/client';
+
 const proofItems = [
   { label: 'Vault', value: 'Housing Credit Vault', state: 'ONCHAIN' },
   { label: 'Network', value: 'BNB Chain Testnet', state: 'ONCHAIN' },
@@ -161,6 +168,158 @@ function HeroAppPreview() {
   );
 }
 
+function useSafeNavigate() {
+  try {
+    return useNavigate();
+  } catch (e) {
+    return (path) => {
+      if (typeof window !== 'undefined' && window.location) {
+        window.location.href = path;
+      }
+    };
+  }
+}
+
+/**
+ * LiveVaultPanel
+ * Baca state vault langsung dari backend → kontrak BNB testnet.
+ * Semua angka di sini berasal dari onchain (kecuali yang ditandai SIMULATED).
+ */
+function LiveVaultPanel() {
+  const [vault, setVault] = useState(null);
+  const [status, setStatus] = useState('idle'); // idle | loading | ok | error
+  const [errorMsg, setErrorMsg] = useState(null);
+
+  const load = async () => {
+    setStatus('loading');
+    setErrorMsg(null);
+    try {
+      const data = await fetchVault();
+      setVault(data);
+      setStatus('ok');
+    } catch (err) {
+      setErrorMsg(err.message || 'Unknown error');
+      setStatus('error');
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  return (
+    <div className="live-panel">
+      <header className="live-panel-header">
+        <div>
+          <span className="live-panel-label">Housing Credit Vault</span>
+          <span className="live-panel-sublabel">BNB Chain Testnet · read-only</span>
+        </div>
+        <span className={`state-chip state-chip--${status === 'ok' ? 'onchain' : status === 'error' ? 'simulated' : 'offchain'}`}>
+          {status === 'idle' && 'MEMUAT'}
+          {status === 'loading' && 'MEMUAT'}
+          {status === 'ok' && 'LIVE ONCHAIN'}
+          {status === 'error' && 'ERROR'}
+        </span>
+      </header>
+
+      {status === 'ok' && vault && (
+        <div className="live-panel-stats">
+          <div className="live-stat">
+            <span className="live-stat-label">Total Assets</span>
+            <span className="live-stat-value">{(Number(vault.totalAssets) / 1e6).toFixed(2)}</span>
+            <span className="live-stat-unit">mock USDC</span>
+          </div>
+          <div className="live-stat">
+            <span className="live-stat-label">Available</span>
+            <span className="live-stat-value">{(Number(vault.availableCapital) / 1e6).toFixed(2)}</span>
+            <span className="live-stat-unit">mock USDC</span>
+          </div>
+          <div className="live-stat">
+            <span className="live-stat-label">Deployed</span>
+            <span className="live-stat-value">{(Number(vault.deployedCapital) / 1e6).toFixed(2)}</span>
+            <span className="live-stat-unit">mock USDC</span>
+          </div>
+          <div className="live-stat">
+            <span className="live-stat-label">Total Shares</span>
+            <span className="live-stat-value">{vault.totalShares}</span>
+            <span className="live-stat-unit">hvSHARE</span>
+          </div>
+        </div>
+      )}
+
+      {status === 'error' && (
+        <div className="live-panel-error">
+          <p>Gagal memuat dari backend: {errorMsg}</p>
+          <button type="button" className="live-panel-retry" onClick={load}>
+            Coba lagi
+          </button>
+        </div>
+      )}
+
+      {status === 'ok' && vault && (
+        <footer className="live-panel-footer">
+          <span className="live-panel-address">
+            {vault.vaultAddress.slice(0, 6)}…{vault.vaultAddress.slice(-4)}
+          </span>
+          <a
+            className="live-panel-link"
+            href={vault.explorerUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Buka di BscScan →
+          </a>
+        </footer>
+      )}
+    </div>
+  );
+}
+
+/**
+ * LiveLoansPanel
+ * List loan dari backend. Kalau kosong, tampilkan pesan jujur.
+ */
+function LiveLoansPanel() {
+  const [loans, setLoans] = useState(null);
+  const [status, setStatus] = useState('loading');
+
+  useEffect(() => {
+    fetchLoans()
+      .then((data) => {
+        setLoans(data.loans || []);
+        setStatus('ok');
+      })
+      .catch(() => setStatus('error'));
+  }, []);
+
+  if (status === 'loading') return <p className="live-empty">Memuat loans…</p>;
+  if (status === 'error') return <p className="live-empty live-empty--error">Gagal memuat loans.</p>;
+  if (!loans || loans.length === 0) {
+    return (
+      <p className="live-empty">
+        Belum ada loan aktif. Loan akan muncul setelah auction difinalisasi.
+      </p>
+    );
+  }
+
+  return (
+    <ul className="live-loans">
+      {loans.map((loan) => (
+        <li key={loan.id} className="live-loan-row">
+          <span className="live-loan-id">#{loan.onchainLoanId}</span>
+          <span className="live-loan-principal">
+            {(Number(loan.principal) / 1e6).toFixed(2)} USDC
+          </span>
+          <span className="live-loan-rate">{loan.rate} bps</span>
+          <span className={`state-chip state-chip--${loan.status === 'ACTIVE' ? 'onchain' : 'offchain'}`}>
+            {loan.status}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -179,6 +338,7 @@ export function App() {
   const chooseJourney = (nextJourney) => {
     setJourney(nextJourney);
     setDialogOpen(false);
+    requestAnimationFrame(() => document.querySelector('#demo')?.scrollIntoView({ behavior: 'smooth' }));
     if (nextJourney === 'investor') {
       navigate('/app/invest');
     } else if (nextJourney === 'borrower') {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import AppLayout from '../components/layout/AppLayout';
 import DataLabelChip from '../components/ui/DataLabelChip';
 import DemoTag from '../components/ui/DemoTag';
@@ -7,6 +7,7 @@ import ShortcutBar from '../components/ui/ShortcutBar';
 import { useAuction } from '../hooks/useAuction';
 import { colors } from '../theme/colors';
 import { tokens } from '../theme/tokens';
+import { fetchApplications, reviewApplication, fetchAdminStatus } from '../api/client';
 
 export function AdminPanel() {
   const {
@@ -30,6 +31,33 @@ export function AdminPanel() {
   const [statusMsg, setStatusMsg] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Web2 DB Applications & Admin status
+  const [applications, setApplications] = useState([]);
+  const [adminStatus, setAdminStatus] = useState(null);
+
+  const loadData = useCallback(async () => {
+    try {
+      const [appsRes, statusRes] = await Promise.all([
+        fetchApplications().catch(() => null),
+        fetchAdminStatus().catch(() => null)
+      ]);
+      if (appsRes?.applications) {
+        setApplications(appsRes.applications);
+      }
+      if (statusRes) {
+        setAdminStatus(statusRes);
+      }
+    } catch {
+      // fallback
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isDemoMode) {
+      loadData();
+    }
+  }, [isDemoMode, loadData]);
+
   const handleApproveSubmit = async (e) => {
     e.preventDefault();
     setIsProcessing(true);
@@ -37,8 +65,32 @@ export function AdminPanel() {
     try {
       await approveBorrower(borrowerAddress, maxPrincipal, propertyHash);
       setStatusMsg({ type: 'success', text: `Granted max principal $${maxPrincipal} to ${borrowerAddress.slice(0, 8)}...` });
+      setTimeout(loadData, 2000);
     } catch (err) {
       setStatusMsg({ type: 'error', text: err.message || 'Approval failed' });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleReviewAppApi = async (app, decision) => {
+    setIsProcessing(true);
+    setStatusMsg({ type: 'info', text: `Submitting review decision (${decision}) via Admin API...` });
+    try {
+      const maxPrin = decision === 'APPROVED' ? (app.requestedAmount || '50000000000').toString() : undefined;
+      await reviewApplication(app.id, {
+        decision,
+        maxPrincipal: maxPrin,
+        reviewedBy: 'Credit Manager Admin',
+        reviewNote: `Approved for property collateral ${app.propertyHash.slice(0, 16)}...`
+      });
+      setStatusMsg({
+        type: 'success',
+        text: `Application #${app.id.slice(0, 8)} successfully ${decision.toLowerCase()}!`
+      });
+      loadData();
+    } catch (err) {
+      setStatusMsg({ type: 'error', text: err.message || 'Review failed' });
     } finally {
       setIsProcessing(false);
     }
@@ -89,6 +141,39 @@ export function AdminPanel() {
           <ShortcutBar shortcuts={[{ key: 'A', label: 'Approve' }, { key: 'F', label: 'Finalize' }]} />
         </div>
       </div>
+
+      {/* Admin Signer Status Banner (when connected to backend) */}
+      {!isDemoMode && adminStatus && (
+        <div
+          style={{
+            padding: '14px 20px',
+            borderRadius: tokens.radii.md,
+            fontSize: '12px',
+            fontFamily: tokens.fonts.mono,
+            marginBottom: tokens.spacing.lg,
+            backgroundColor: 'rgba(124, 124, 255, 0.08)',
+            border: `1px solid ${colors.border}`,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '12px'
+          }}
+        >
+          <div>
+            <span style={{ color: colors.ink.tertiary }}>Admin Signer: </span>
+            <span style={{ color: colors.accent }}>{adminStatus.adminAddress}</span>
+            <span style={{ marginLeft: '12px', color: colors.ink.secondary }}>
+              ({adminStatus.balanceBnb} BNB)
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <span style={{ color: colors.state.onchain.color }}>Chain ID: {adminStatus.chainId}</span>
+            <span style={{ color: colors.ink.quaternary }}>•</span>
+            <span style={{ color: colors.ink.tertiary }}>Contracts Deployed</span>
+          </div>
+        </div>
+      )}
 
       {statusMsg && (
         <div
@@ -306,6 +391,108 @@ export function AdminPanel() {
         </div>
       </div>
 
+      {/* Applications Queue from Web2 Database (when available) */}
+      {applications.length > 0 && (
+        <div
+          style={{
+            backgroundColor: colors.card,
+            border: `1px solid ${colors.border}`,
+            borderRadius: tokens.radii.lg,
+            padding: '24px',
+            marginBottom: tokens.spacing.xl
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, color: colors.ink.primary, margin: 0 }}>
+              Borrower Credit Applications (Web2 Database)
+            </h3>
+            <DataLabelChip type="offchain" label="Database Queue" />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {applications.map((app) => (
+              <div
+                key={app.id}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '12px 16px',
+                  backgroundColor: colors.base,
+                  borderRadius: tokens.radii.sm,
+                  border: `1px solid ${colors.border}`
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: colors.ink.primary }}>
+                    {app.applicant?.displayName || 'Applicant'} • {app.applicant?.walletAddress?.slice(0, 10)}...
+                  </div>
+                  <div style={{ fontSize: '11px', color: colors.ink.tertiary, marginTop: '2px', fontFamily: tokens.fonts.mono }}>
+                    Property: {app.propertyHash} • Requested: ${(Number(app.requestedAmount) / 1e6).toLocaleString()} USDC @ {(app.requestedRate / 100)}%
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      fontFamily: tokens.fonts.mono,
+                      color:
+                        app.status === 'APPROVED'
+                          ? colors.state.onchain.color
+                          : app.status === 'REJECTED'
+                          ? colors.state.simulated.color
+                          : colors.state.offchain.color
+                    }}
+                  >
+                    {app.status}
+                  </span>
+
+                  {app.status === 'PENDING' && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBorrowerAddress(app.applicant?.walletAddress || '');
+                          setMaxPrincipal((Number(app.requestedAmount) / 1e6).toString());
+                          setPropertyHash(app.propertyHash);
+                        }}
+                        style={{
+                          padding: '4px 10px',
+                          backgroundColor: 'transparent',
+                          border: `1px solid ${colors.border}`,
+                          color: colors.ink.primary,
+                          borderRadius: tokens.radii.sm,
+                          fontSize: '11px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Pre-fill Form
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleReviewAppApi(app, 'APPROVED')}
+                        style={{
+                          padding: '4px 10px',
+                          backgroundColor: 'rgba(124, 255, 178, 0.1)',
+                          border: `1px solid ${colors.state.onchain.color}`,
+                          color: colors.state.onchain.color,
+                          borderRadius: tokens.radii.sm,
+                          fontSize: '11px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Approve via API
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Bids Evaluation Table */}
       <div
         style={{
@@ -322,20 +509,26 @@ export function AdminPanel() {
           <DataLabelChip type={isDemoMode ? 'simulated' : 'onchain'} />
         </div>
 
-        {bids.map((bid, idx) => (
-          <InboxRow
-            key={idx}
-            statusDotColor={colors.accent}
-            title={`${bid.borrower.slice(0, 10)}... • Requested $${bid.amount} @ ${bid.rate}% APR`}
-            subtitle={`Property: ${bid.property} • Term: ${bid.term} Months`}
-            dataType={isDemoMode ? 'simulated' : 'onchain'}
-            customRight={
-              <span style={{ fontSize: '12px', fontFamily: tokens.fonts.mono, color: colors.state.onchain.color }}>
-                {bid.status}
-              </span>
-            }
-          />
-        ))}
+        {bids.length === 0 ? (
+          <p style={{ fontSize: '13px', color: colors.ink.tertiary, margin: 0 }}>
+            No bids submitted yet for the current auction.
+          </p>
+        ) : (
+          bids.map((bid, idx) => (
+            <InboxRow
+              key={idx}
+              statusDotColor={colors.accent}
+              title={`${bid.borrower.slice(0, 10)}... • Requested $${bid.amount} @ ${bid.rate}% APR`}
+              subtitle={`Property: ${bid.property} • Term: ${bid.term} Months`}
+              dataType={isDemoMode ? 'simulated' : 'onchain'}
+              customRight={
+                <span style={{ fontSize: '12px', fontFamily: tokens.fonts.mono, color: colors.state.onchain.color }}>
+                  {bid.status}
+                </span>
+              }
+            />
+          ))
+        )}
       </div>
     </AppLayout>
   );
