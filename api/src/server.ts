@@ -10,25 +10,27 @@ import { applicationRoutes } from "./modules/applications/routes.js";
 import { auctionRoutes } from "./modules/auctions/routes.js";
 import { startIndexer } from "./chain/indexer.js";
 
+// === BigInt JSON patch ===
+// Prisma mengembalikan BigInt untuk kolom decimal/bigint.
+// JSON.stringify tidak tahu cara serialize BigInt → kita beri method toJSON.
+(BigInt.prototype as unknown as { toJSON: () => string }).toJSON = function () {
+    return this.toString();
+};
+
 const app = Fastify({ logger: false, trustProxy: true });
 
 await app.register(helmet);
-const allowedOrigins = config.CORS_ORIGIN.split(",").map((s) => s.trim()).filter(Boolean);
-await app.register(cors, {
-    origin: allowedOrigins,
-    credentials: true,
-});
+
+// CORS: split string jadi array supaya fastify-cors kirim header benar
+const allowedOrigins = config.CORS_ORIGIN.split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+await app.register(cors, { origin: allowedOrigins, credentials: true });
 
 await app.register(healthRoutes);
-
-// Public read endpoints: /api/vault, /api/loans, /api/events
 await app.register(publicRoutes, { prefix: "/api" });
-
-// Borrower application + public auction list
 await app.register(applicationRoutes, { prefix: "/api" });
 await app.register(auctionRoutes, { prefix: "/api" });
-
-// Admin (dilindungi API key)
 await app.register(adminRoutes, { prefix: "/api/admin" });
 
 startIndexer().catch((err) => logger.error("Indexer crashed", err));
