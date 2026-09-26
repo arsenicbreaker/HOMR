@@ -1638,11 +1638,50 @@ a:focus-visible,
 
 .dashboard-menu-button {
   display: none;
+  width: 44px;
+  height: 44px;
   min-height: 44px;
-  padding: 0 12px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 44px;
+  padding: 0;
   border: 1px solid var(--divider);
   border-radius: var(--rounded-sm);
   color: var(--ink);
+}
+
+.dashboard-menu-button__icon {
+  position: relative;
+  width: 18px;
+  height: 14px;
+  display: block;
+}
+
+.dashboard-menu-button__icon span {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 1.5px;
+  background: currentColor;
+  transition: opacity var(--transition), transform var(--transition), top var(--transition);
+}
+
+.dashboard-menu-button__icon span:nth-child(1) { top: 0; }
+.dashboard-menu-button__icon span:nth-child(2) { top: 6px; }
+.dashboard-menu-button__icon span:nth-child(3) { top: 12px; }
+
+.dashboard-menu-button[aria-expanded="true"] .dashboard-menu-button__icon span:nth-child(1) {
+  top: 6px;
+  transform: rotate(45deg);
+}
+
+.dashboard-menu-button[aria-expanded="true"] .dashboard-menu-button__icon span:nth-child(2) {
+  opacity: 0;
+}
+
+.dashboard-menu-button[aria-expanded="true"] .dashboard-menu-button__icon span:nth-child(3) {
+  top: 6px;
+  transform: rotate(-45deg);
 }
 
 .dashboard-frame {
@@ -1711,7 +1750,6 @@ a:focus-visible,
 .dashboard-nav-item.is-active {
   color: var(--on-dark);
   background: rgba(203, 183, 251, 0.16);
-  box-shadow: inset 3px 0 0 var(--primary);
 }
 
 .dashboard-nav-item span {
@@ -2452,9 +2490,33 @@ a:focus-visible,
 /* ---------- Compact dashboard refinement ---------- */
 
 .dashboard-topbar {
+  height: 60px;
   min-height: 60px;
-  padding: 8px 16px;
+  padding: 0 16px 0 0;
   background: rgba(18, 17, 17, 0.98);
+}
+
+.dashboard-topbar__brand {
+  align-self: stretch;
+  gap: 0;
+}
+
+.dashboard-wordmark {
+  width: 96px;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 96px;
+  padding-left: 16px;
+  border-right: 1px solid var(--divider);
+}
+
+.dashboard-topbar__divider {
+  display: none;
+}
+
+.dashboard-role-label {
+  margin-left: 16px;
 }
 
 .dashboard-frame {
@@ -2511,7 +2573,6 @@ a:focus-visible,
 .dashboard-nav-item.is-active {
   color: var(--primary);
   background: rgba(203, 183, 251, 0.08);
-  box-shadow: inset 2px 0 0 var(--primary);
 }
 
 .dashboard-nav-icon {
@@ -2908,6 +2969,31 @@ a:focus-visible,
 }
 
 @media (max-width: 900px) {
+  .dashboard-topbar {
+    padding: 8px 16px;
+  }
+
+  .dashboard-topbar__brand {
+    gap: 12px;
+  }
+
+  .dashboard-wordmark {
+    width: auto;
+    height: auto;
+    flex-basis: auto;
+    padding-left: 0;
+    border-right: 0;
+  }
+
+  .dashboard-role-label {
+    margin-left: 0;
+  }
+
+  .dashboard-split,
+  .dashboard-split--wide {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .dashboard-frame {
     grid-template-columns: minmax(0, 1fr);
   }

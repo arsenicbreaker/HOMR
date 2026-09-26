@@ -36,10 +36,10 @@ describe('role dashboard information architecture', () => {
     const user = userEvent.setup();
     renderDashboard(InvestorDashboard);
 
-    await user.click(screen.getByRole('button', { name: 'Menu' }));
-    expect(screen.getByRole('button', { name: 'Close' }).getAttribute('aria-expanded')).toBe('true');
+    await user.click(screen.getByRole('button', { name: 'Open navigation menu' }));
+    expect(screen.getByRole('button', { name: 'Close navigation menu' }).getAttribute('aria-expanded')).toBe('true');
     await user.click(screen.getByRole('button', { name: 'Close navigation' }));
-    expect(screen.getByRole('button', { name: 'Menu' }).getAttribute('aria-expanded')).toBe('false');
+    expect(screen.getByRole('button', { name: 'Open navigation menu' }).getAttribute('aria-expanded')).toBe('false');
   });
 
   it('shows only the selected investor section', async () => {

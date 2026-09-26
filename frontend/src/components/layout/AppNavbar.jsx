@@ -11,9 +11,14 @@ export function AppNavbar({ roleLabel, menuOpen, onMenuToggle }) {
           className="dashboard-menu-button"
           aria-expanded={menuOpen}
           aria-controls="dashboard-sidebar"
+          aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
           onClick={onMenuToggle}
         >
-          {menuOpen ? 'Close' : 'Menu'}
+          <span className="dashboard-menu-button__icon" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
         </button>
         <Link to="/" className="dashboard-wordmark" aria-label="HOUSD landing page">
           HOUSD<span>.</span>
