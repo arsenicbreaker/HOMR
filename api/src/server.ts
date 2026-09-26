@@ -13,7 +13,11 @@ import { startIndexer } from "./chain/indexer.js";
 const app = Fastify({ logger: false, trustProxy: true });
 
 await app.register(helmet);
-await app.register(cors, { origin: config.CORS_ORIGIN, credentials: true });
+const allowedOrigins = config.CORS_ORIGIN.split(",").map((s) => s.trim()).filter(Boolean);
+await app.register(cors, {
+    origin: allowedOrigins,
+    credentials: true,
+});
 
 await app.register(healthRoutes);
 

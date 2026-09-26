@@ -2,12 +2,38 @@ import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 
+const API_BASE = "http://localhost:4000";
+
+async function fetchVault() {
+  const res = await fetch(`${API_BASE}/api/vault`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+async function fetchLoans() {
+  const res = await fetch(`${API_BASE}/api/loans`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+async function fetchEvents() {
+  const res = await fetch(`${API_BASE}/api/events`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
 const proofItems = [
   { label: 'Vault', value: 'Housing Credit Vault', state: 'ONCHAIN' },
   { label: 'Network', value: 'BNB Chain Testnet', state: 'ONCHAIN' },
   { label: 'Borrower data', value: 'Contoh untuk demo', state: 'SIMULATED' },
   { label: 'Collateral review', value: 'Referensi privat', state: 'VERIFIED OFFCHAIN' },
 ];
+
+const API_ENDPOINTS = {
+  vault: `${API_BASE}/api/vault`,
+  loans: `${API_BASE}/api/loans`,
+  events: `${API_BASE}/api/events`,
+};
 
 const decisions = [
   {
@@ -153,6 +179,147 @@ function HeroAppPreview() {
     </div>
   );
 }
+
+/**
+ * LiveVaultPanel
+ * Baca state vault langsung dari backend → kontrak BNB testnet.
+ * Semua angka di sini berasal dari onchain (kecuali yang ditandai SIMULATED).
+ */
+function LiveVaultPanel() {
+  const [vault, setVault] = useState(null);
+  const [status, setStatus] = useState('idle'); // idle | loading | ok | error
+  const [errorMsg, setErrorMsg] = useState(null);
+
+  const load = async () => {
+    setStatus('loading');
+    setErrorMsg(null);
+    try {
+      const data = await fetchVault();
+      setVault(data);
+      setStatus('ok');
+    } catch (err) {
+      setErrorMsg(err.message || 'Unknown error');
+      setStatus('error');
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  return (
+    <div className="live-panel">
+      <header className="live-panel-header">
+        <div>
+          <span className="live-panel-label">Housing Credit Vault</span>
+          <span className="live-panel-sublabel">BNB Chain Testnet · read-only</span>
+        </div>
+        <span className={`state-chip state-chip--${status === 'ok' ? 'onchain' : status === 'error' ? 'simulated' : 'offchain'}`}>
+          {status === 'idle' && 'MEMUAT'}
+          {status === 'loading' && 'MEMUAT'}
+          {status === 'ok' && 'LIVE ONCHAIN'}
+          {status === 'error' && 'ERROR'}
+        </span>
+      </header>
+
+      {status === 'ok' && vault && (
+        <div className="live-panel-stats">
+          <div className="live-stat">
+            <span className="live-stat-label">Total Assets</span>
+            <span className="live-stat-value">{(Number(vault.totalAssets) / 1e6).toFixed(2)}</span>
+            <span className="live-stat-unit">mock USDC</span>
+          </div>
+          <div className="live-stat">
+            <span className="live-stat-label">Available</span>
+            <span className="live-stat-value">{(Number(vault.availableCapital) / 1e6).toFixed(2)}</span>
+            <span className="live-stat-unit">mock USDC</span>
+          </div>
+          <div className="live-stat">
+            <span className="live-stat-label">Deployed</span>
+            <span className="live-stat-value">{(Number(vault.deployedCapital) / 1e6).toFixed(2)}</span>
+            <span className="live-stat-unit">mock USDC</span>
+          </div>
+          <div className="live-stat">
+            <span className="live-stat-label">Total Shares</span>
+            <span className="live-stat-value">{vault.totalShares}</span>
+            <span className="live-stat-unit">hvSHARE</span>
+          </div>
+        </div>
+      )}
+
+      {status === 'error' && (
+        <div className="live-panel-error">
+          <p>Gagal memuat dari backend: {errorMsg}</p>
+          <button type="button" className="live-panel-retry" onClick={load}>
+            Coba lagi
+          </button>
+        </div>
+      )}
+
+      {status === 'ok' && vault && (
+        <footer className="live-panel-footer">
+          <span className="live-panel-address">
+            {vault.vaultAddress.slice(0, 6)}…{vault.vaultAddress.slice(-4)}
+          </span>
+          <a
+            className="live-panel-link"
+            href={vault.explorerUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Buka di BscScan →
+          </a>
+        </footer>
+      )}
+    </div>
+  );
+}
+
+/**
+ * LiveLoansPanel
+ * List loan dari backend. Kalau kosong, tampilkan pesan jujur.
+ */
+function LiveLoansPanel() {
+  const [loans, setLoans] = useState(null);
+  const [status, setStatus] = useState('loading');
+
+  useEffect(() => {
+    fetchLoans()
+      .then((data) => {
+        setLoans(data.loans || []);
+        setStatus('ok');
+      })
+      .catch(() => setStatus('error'));
+  }, []);
+
+  if (status === 'loading') return <p className="live-empty">Memuat loans…</p>;
+  if (status === 'error') return <p className="live-empty live-empty--error">Gagal memuat loans.</p>;
+  if (!loans || loans.length === 0) {
+    return (
+      <p className="live-empty">
+        Belum ada loan aktif. Loan akan muncul setelah auction difinalisasi.
+      </p>
+    );
+  }
+
+  return (
+    <ul className="live-loans">
+      {loans.map((loan) => (
+        <li key={loan.id} className="live-loan-row">
+          <span className="live-loan-id">#{loan.onchainLoanId}</span>
+          <span className="live-loan-principal">
+            {(Number(loan.principal) / 1e6).toFixed(2)} USDC
+          </span>
+          <span className="live-loan-rate">{loan.rate} bps</span>
+          <span className={`state-chip state-chip--${loan.status === 'ACTIVE' ? 'onchain' : 'offchain'}`}>
+            {loan.status}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 
 export function App() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -331,6 +498,22 @@ export function App() {
               Selalu tahu apa yang nyata, privat, atau simulasi.
             </h2>
           </header>
+
+          {/* Live data dari backend → kontrak BNB testnet */}
+          <div className="live-grid">
+            <LiveVaultPanel />
+            <div className="live-panel live-panel--loans">
+              <header className="live-panel-header">
+                <div>
+                  <span className="live-panel-label">Active Loans</span>
+                  <span className="live-panel-sublabel">Dari LoanManager onchain</span>
+                </div>
+              </header>
+              <LiveLoansPanel />
+            </div>
+          </div>
+
+          {/* Ledger statis — menjelaskan sumber data per field */}
           <div className="ledger" role="list">
             <div className="ledger-head" aria-hidden="true">
               <span>Field</span>
