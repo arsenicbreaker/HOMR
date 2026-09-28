@@ -58,3 +58,4 @@ Thumbs.db
 # ============================================
 coverage/
 .cache/
+backend/faucet/.env
