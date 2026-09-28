@@ -1,26 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import './styles.css';
 
-const API_BASE = "http://localhost:4000";
-
-async function fetchVault() {
-  const res = await fetch(`${API_BASE}/api/vault`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
-
-async function fetchLoans() {
-  const res = await fetch(`${API_BASE}/api/loans`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
-
-async function fetchEvents() {
-  const res = await fetch(`${API_BASE}/api/events`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
+import Web3Provider from './context/Web3Provider';
+import { DemoModeProvider } from './context/DemoModeContext';
+import InvestorDashboard from './pages/InvestorDashboard';
+import BorrowerDashboard from './pages/BorrowerDashboard';
+import AdminPanel from './pages/AdminPanel';
+import { API_BASE, fetchVault, fetchLoans, fetchEvents } from './api/client';
 
 const proofItems = [
   { label: 'Vault', value: 'Housing Credit Vault', state: 'ONCHAIN' },
@@ -160,14 +148,14 @@ function HeroAppPreview() {
             <div className="hero-app-rows">
               <div className="app-row">
                 <div className="app-row-info">
-                  <span className="app-row-title">Permohonan Kredit #0412 — Cluster Residential BSD</span>
+                  <span className="app-row-title">Permohonan Kredit #0412, Cluster Residential BSD</span>
                   <span className="app-row-sub">Evaluasi Offchain Selesai · Bid Sealed #0x82f...a1</span>
                 </div>
                 <span className="state-chip state-chip--onchain">ALLOCATED ONCHAIN</span>
               </div>
               <div className="app-row">
                 <div className="app-row-info">
-                  <span className="app-row-title">Permohonan Kredit #0413 — Modern Housing Bintaro</span>
+                  <span className="app-row-title">Permohonan Kredit #0413, Modern Housing Bintaro</span>
                   <span className="app-row-sub">Verifikasi Dokumen Agunan · Risk Limit Checked</span>
                 </div>
                 <span className="state-chip state-chip--offchain">VERIFIED OFFCHAIN</span>
@@ -178,6 +166,18 @@ function HeroAppPreview() {
       </div>
     </div>
   );
+}
+
+function useSafeNavigate() {
+  try {
+    return useNavigate();
+  } catch (e) {
+    return (path) => {
+      if (typeof window !== 'undefined' && window.location) {
+        window.location.href = path;
+      }
+    };
+  }
 }
 
 /**
@@ -320,11 +320,11 @@ function LiveLoansPanel() {
   );
 }
 
-
 export function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [journey, setJourney] = useState('investor');
+  const navigate = useSafeNavigate();
 
   useEffect(() => {
     if (!dialogOpen) return undefined;
@@ -339,6 +339,13 @@ export function App() {
     setJourney(nextJourney);
     setDialogOpen(false);
     requestAnimationFrame(() => document.querySelector('#demo')?.scrollIntoView({ behavior: 'smooth' }));
+    if (nextJourney === 'investor') {
+      navigate('/app/invest');
+    } else if (nextJourney === 'borrower') {
+      navigate('/app/borrow');
+    } else if (nextJourney === 'admin') {
+      navigate('/app/admin');
+    }
   };
 
   const activeJourney = journeys[journey];
@@ -584,24 +591,35 @@ export function App() {
               Kamu mau melihat HOUSD dari sisi mana?
             </h2>
             <div className="dialog-options">
-              {Object.keys(journeys).map((key) => (
-                <button
-                  key={key}
-                  type="button"
-                  className="dialog-option"
-                  onClick={() => chooseJourney(key)}
-                >
-                  <span className="dialog-option-label">
-                    {key === 'investor' ? 'Investor' : 'Borrower'}
-                  </span>
-                  <span className="dialog-option-detail">
-                    {key === 'investor'
-                      ? 'Deposit dan pantau vault'
-                      : 'Commit dan reveal bid'}
-                  </span>
-                  <span className="dialog-option-arrow" aria-hidden="true">›</span>
-                </button>
-              ))}
+              <button
+                type="button"
+                className="dialog-option"
+                onClick={() => chooseJourney('investor')}
+              >
+                <span className="dialog-option-label">Investor</span>
+                <span className="dialog-option-detail">Deposit dan pantau vault</span>
+                <span className="dialog-option-arrow" aria-hidden="true">›</span>
+              </button>
+
+              <button
+                type="button"
+                className="dialog-option"
+                onClick={() => chooseJourney('borrower')}
+              >
+                <span className="dialog-option-label">Borrower</span>
+                <span className="dialog-option-detail">Commit dan reveal bid</span>
+                <span className="dialog-option-arrow" aria-hidden="true">›</span>
+              </button>
+
+              <button
+                type="button"
+                className="dialog-option"
+                onClick={() => chooseJourney('admin')}
+              >
+                <span className="dialog-option-label">Credit Manager / Admin</span>
+                <span className="dialog-option-detail">Underwrite & kelola lelang</span>
+                <span className="dialog-option-arrow" aria-hidden="true">›</span>
+              </button>
             </div>
             <p className="dialog-fineprint">
               Tidak perlu wallet. Semua nilai di halaman demo diberi label sesuai sumbernya.
@@ -621,7 +639,18 @@ const rootElement = document.getElementById('root');
 if (rootElement) {
   createRoot(rootElement).render(
     <React.StrictMode>
-      <App />
+      <Web3Provider>
+        <DemoModeProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<App />} />
+              <Route path="/app/invest" element={<InvestorDashboard />} />
+              <Route path="/app/borrow" element={<BorrowerDashboard />} />
+              <Route path="/app/admin" element={<AdminPanel />} />
+            </Routes>
+          </BrowserRouter>
+        </DemoModeProvider>
+      </Web3Provider>
     </React.StrictMode>,
   );
 }
