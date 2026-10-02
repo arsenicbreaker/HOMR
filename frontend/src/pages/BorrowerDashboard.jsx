@@ -276,7 +276,7 @@ export function BorrowerDashboard() {
             </div>
 
             {auctionAction === 'commit' ? (
-              <form className="dashboard-form" onSubmit={handleCommitSubmit}>
+              <form key="commit" className="dashboard-form dashboard-tab-panel" onSubmit={handleCommitSubmit}>
                 <Notice>Keep a private copy of these terms and salt. They are saved in this browser before committing; clearing browser data removes them.</Notice>
                 <div className="dashboard-form-grid dashboard-form-grid--three">
                   <Field label="Principal amount (mUSDC)"><input type="number" value={bidAmount} onChange={(event) => setBidAmount(event.target.value)} /></Field>
@@ -287,7 +287,7 @@ export function BorrowerDashboard() {
                 <button className="dashboard-primary-button" type="submit" disabled={isProcessing || !canCommit}>{isProcessing ? 'Committing...' : 'Commit bid hash'}</button>
               </form>
             ) : (
-              <form className="dashboard-form" onSubmit={handleRevealSubmit}>
+              <form key="reveal" className="dashboard-form dashboard-tab-panel" onSubmit={handleRevealSubmit}>
                 <Field label="Original principal (mUSDC)"><input value={bidAmount} onChange={(event) => setBidAmount(event.target.value)} /></Field>
                 <Field label="Original rate (% APR)"><input value={bidRate} onChange={(event) => setBidRate(event.target.value)} /></Field>
                 <Field label="Original term (months)"><input value={bidTerm} onChange={(event) => setBidTerm(event.target.value)} /></Field>

@@ -69,7 +69,7 @@
   /* Avatars, radio, switches, dots */
 
   /* Transitions & Elevation */
-  --transition: 120ms cubic-bezier(0.2, 0, 0.2, 1);
+  --transition: 180ms cubic-bezier(0.22, 1, 0.36, 1);
   --elevation-level1: 0 0 0 1px var(--divider);
   --elevation-level2: 0 0 0 1px rgba(255, 255, 255, 0.6);
   --elevation-level3: 0 4px 20px rgba(203, 183, 251, 0.1);
@@ -1015,7 +1015,7 @@ a:focus-visible,
   color: var(--mute);
   height: 64px;
   justify-content: center;
-  transition: background var(--transition), color var(--transition);
+  transition: background var(--transition), color var(--transition), box-shadow var(--transition);
 }
 
 .demo-tab:last-child {
@@ -1051,6 +1051,7 @@ a:focus-visible,
   border: 1px solid var(--divider);
   border-radius: var(--rounded-lg);
   padding: var(--space-xl);
+  animation: dashboard-arrive 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .demo-copy {
@@ -1287,7 +1288,6 @@ a:focus-visible,
   padding: 24px;
   background: rgba(0, 0, 0, 0.72);
   backdrop-filter: blur(8px);
-  animation: fade-in 120ms ease-out;
 }
 
 .journey-dialog {
@@ -1297,7 +1297,6 @@ a:focus-visible,
   border: 1px solid var(--divider);
   border-radius: var(--rounded-lg);
   box-shadow: var(--shadow-overlay);
-  animation: rise 160ms cubic-bezier(0.2, 0, 0.2, 1);
 }
 
 .dialog-header {
@@ -1352,12 +1351,16 @@ a:focus-visible,
   background: var(--bone);
   border: 1px solid var(--divider);
   border-radius: var(--rounded-sm);
-  transition: border-color var(--transition), background var(--transition);
+  transition: border-color var(--transition), background var(--transition), transform var(--transition);
 }
 
 .dialog-option:hover {
   border-color: var(--primary);
   background: var(--card);
+}
+
+.dialog-option:active {
+  transform: translateY(1px);
 }
 
 .dialog-option-label {
@@ -1403,18 +1406,6 @@ a:focus-visible,
 
   to {
     opacity: 1;
-  }
-}
-
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -1745,10 +1736,77 @@ a:focus-visible,
 
 /* ---------- Role dashboards ---------- */
 
+.dashboard-entry {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+.dashboard-entry__content {
+  width: min(100%, 390px);
+  animation: dashboard-arrive 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.dashboard-entry__brand {
+  display: block;
+  margin-bottom: 36px;
+  color: var(--primary);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.dashboard-entry h1 {
+  margin: 0;
+  font-size: clamp(28px, 6vw, 38px);
+  font-weight: 540;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+
+.dashboard-entry p {
+  margin: 14px 0 28px;
+  color: var(--mute);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.dashboard-entry__track {
+  height: 2px;
+  overflow: hidden;
+  background: var(--divider);
+}
+
+.dashboard-entry__track span {
+  display: block;
+  width: 32%;
+  height: 100%;
+  background: var(--primary);
+  animation: dashboard-entry-progress 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes dashboard-entry-progress {
+  from { transform: translateX(0); }
+  to { transform: translateX(213%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-entry__track span { animation: none; }
+}
+
 .dashboard-app {
   min-height: 100vh;
   background: var(--canvas);
   color: var(--ink);
+  animation: fade-in 220ms ease-out both;
+}
+
+@keyframes dashboard-arrive {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .dashboard-topbar {
@@ -1806,6 +1864,15 @@ a:focus-visible,
   font-size: 12px;
   transition: color var(--transition), border-color var(--transition), background var(--transition);
 }
+
+.dashboard-faucet-link {
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 600;
+  transition: color var(--transition);
+}
+
+.dashboard-faucet-link:hover { color: var(--ink); }
 
 .dashboard-back-link:hover {
   color: var(--ink);
@@ -1916,7 +1983,7 @@ a:focus-visible,
   border-radius: var(--rounded-sm);
   color: rgba(252, 252, 252, 0.68);
   text-align: left;
-  transition: color var(--transition), background var(--transition);
+  transition: color var(--transition), background var(--transition), transform var(--transition);
 }
 
 .dashboard-nav-item:hover {
@@ -1980,6 +2047,10 @@ a:focus-visible,
   min-width: 0;
   padding: 48px clamp(24px, 4vw, 64px) 80px;
   outline: none;
+}
+
+.dashboard-section {
+  animation: dashboard-arrive 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .dashboard-page-intro {
@@ -2238,7 +2309,13 @@ a:focus-visible,
   border-radius: var(--rounded-sm);
   font-size: 13px;
   font-weight: 600;
-  transition: background var(--transition), border-color var(--transition), color var(--transition), opacity var(--transition);
+  transition: background var(--transition), border-color var(--transition), color var(--transition), opacity var(--transition), transform var(--transition);
+}
+
+.dashboard-primary-button:active:not(:disabled),
+.dashboard-secondary-button:active:not(:disabled),
+.dashboard-nav-item:active {
+  transform: translateY(1px);
 }
 
 .dashboard-primary-button {
@@ -2278,6 +2355,8 @@ a:focus-visible,
   background: rgba(203, 183, 251, 0.08);
   font-size: 13px;
   line-height: 1.5;
+  animation: fade-in 180ms ease-out both;
+  transition: color var(--transition), border-color var(--transition), background-color var(--transition);
 }
 
 .dashboard-notice--success {
@@ -2361,6 +2440,7 @@ a:focus-visible,
   border-right: 1px solid var(--divider);
   font-size: 13px;
   font-weight: 600;
+  transition: color var(--transition), background var(--transition), box-shadow var(--transition);
 }
 
 .dashboard-tabs button:last-child { border-right: 0; }
@@ -2369,6 +2449,10 @@ a:focus-visible,
   color: var(--ink);
   background: var(--card);
   box-shadow: inset 0 -3px 0 var(--primary);
+}
+
+.dashboard-tab-panel {
+  animation: dashboard-arrive 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .dashboard-quick-value {

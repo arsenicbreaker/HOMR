@@ -6,9 +6,9 @@ import DataLabelChip from '../components/ui/DataLabelChip';
 import DemoTag from '../components/ui/DemoTag';
 
 describe('DataLabelChip & DemoTag Components', () => {
-  it('renders Onchain label correctly', () => {
-    render(<DataLabelChip type="onchain" />);
-    expect(screen.getByText('Onchain')).toBeTruthy();
+  it('does not render the Onchain badge', () => {
+    const { container } = render(<DataLabelChip type="onchain" />);
+    expect(container.firstChild).toBeNull();
   });
 
   it('renders Verified offchain label correctly', () => {

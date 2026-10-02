@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import './styles.css';
 
 import Web3Provider from './context/Web3Provider';
@@ -8,6 +9,8 @@ import { DemoModeProvider } from './context/DemoModeContext';
 import InvestorDashboard from './pages/InvestorDashboard';
 import BorrowerDashboard from './pages/BorrowerDashboard';
 import AdminPanel from './pages/AdminPanel';
+import FaucetPage from './pages/FaucetPage';
+import DashboardEntry from './components/layout/DashboardEntry';
 import DecisionCard from './components/DecisionCard';
 import RiskGlobe from './components/RiskGlobe';
 import BorderGlow from './components/ui/BorderGlow';
@@ -339,6 +342,7 @@ export function App() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [journey, setJourney] = useState('investor');
   const navigate = useSafeNavigate();
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (!dialogOpen) return undefined;
@@ -382,6 +386,7 @@ export function App() {
             <a href="#demo" onClick={() => setMenuOpen(false)}>Demo</a>
             <a href="#transparansi" onClick={() => setMenuOpen(false)}>Transparansi</a>
             <a href="#risiko" onClick={() => setMenuOpen(false)}>Risiko</a>
+            <Link to="/faucet" onClick={() => setMenuOpen(false)}>Faucet</Link>
           </nav>
           <div className="topbar-actions">
             <button
@@ -484,7 +489,7 @@ export function App() {
               </button>
             ))}
           </div>
-          <div className="demo-panel">
+          <div key={journey} className="demo-panel">
             <p className="section-eyebrow">{activeJourney.eyebrow}</p>
             <h2 id="demo-title" className="section-title section-title--md">
               {activeJourney.title}
@@ -565,15 +570,29 @@ export function App() {
         <p className="footer-meta">v0.1 · testnet</p>
       </footer>
 
+      <AnimatePresence>
       {dialogOpen && (
-        <div
+        <motion.div
           className="dialog-backdrop"
           role="presentation"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: reducedMotion ? 0 : 0.18 }}
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setDialogOpen(false);
           }}
         >
-          <div className="journey-dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+          <motion.div
+            className="journey-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dialog-title"
+            initial={{ opacity: 0, y: reducedMotion ? 0 : 10, scale: reducedMotion ? 1 : 0.985 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: reducedMotion ? 0 : 6, scale: reducedMotion ? 1 : 0.99 }}
+            transition={{ duration: reducedMotion ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] }}
+          >
             <div className="dialog-header">
               <p className="section-eyebrow">SIMULATED DEMO</p>
               <button
@@ -625,9 +644,10 @@ export function App() {
                 Tekan <Kbd>ESC</Kbd> untuk tutup.
               </span>
             </p>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -642,9 +662,10 @@ if (rootElement) {
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<App />} />
-              <Route path="/app/invest" element={<InvestorDashboard />} />
-              <Route path="/app/borrow" element={<BorrowerDashboard />} />
-              <Route path="/app/admin" element={<AdminPanel />} />
+              <Route path="/app/invest" element={<DashboardEntry role="investor"><InvestorDashboard /></DashboardEntry>} />
+              <Route path="/app/borrow" element={<DashboardEntry role="borrower"><BorrowerDashboard /></DashboardEntry>} />
+              <Route path="/app/admin" element={<DashboardEntry role="admin"><AdminPanel /></DashboardEntry>} />
+              <Route path="/faucet" element={<FaucetPage />} />
             </Routes>
           </BrowserRouter>
         </DemoModeProvider>

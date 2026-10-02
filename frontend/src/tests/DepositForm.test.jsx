@@ -33,17 +33,17 @@ describe('Deposit Form Validation & Execution', () => {
     );
   };
 
-  it('renders deposit input and initial vault shares in capital actions', () => {
+  it('renders deposit input and initial vault shares in capital actions', async () => {
     renderDashboard();
     fireEvent.click(screen.getByRole('button', { name: /Capital.*Deposit/ }));
-    expect(screen.getByLabelText('Deposit amount (mUSDC)')).toBeTruthy();
+    expect(await screen.findByLabelText('Deposit amount (mUSDC)')).toBeTruthy();
     expect(screen.getAllByText('25,000.00').length).toBeGreaterThan(0);
   });
 
   it('displays error when submitting 0 or negative deposit amount', async () => {
     renderDashboard();
     fireEvent.click(screen.getByRole('button', { name: /Capital.*Deposit/ }));
-    const input = screen.getByLabelText('Deposit amount (mUSDC)');
+    const input = await screen.findByLabelText('Deposit amount (mUSDC)');
     const submitBtn = screen.getByRole('button', { name: 'Deposit and mint shares' });
 
     fireEvent.change(input, { target: { value: '0' } });
@@ -57,7 +57,7 @@ describe('Deposit Form Validation & Execution', () => {
   it('updates vault shares and TVL upon successful demo deposit', async () => {
     renderDashboard();
     fireEvent.click(screen.getByRole('button', { name: /Capital.*Deposit/ }));
-    const input = screen.getByLabelText('Deposit amount (mUSDC)');
+    const input = await screen.findByLabelText('Deposit amount (mUSDC)');
     const submitBtn = screen.getByRole('button', { name: 'Deposit and mint shares' });
 
     fireEvent.change(input, { target: { value: '5000' } });

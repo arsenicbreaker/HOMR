@@ -177,7 +177,7 @@ export function InvestorDashboard() {
               {statusMsg && <Notice type={statusMsg.type}>{statusMsg.text}</Notice>}
 
               {capitalAction === 'deposit' ? (
-                <form className="dashboard-form" onSubmit={handleDepositSubmit}>
+                <form key="deposit" className="dashboard-form dashboard-tab-panel" onSubmit={handleDepositSubmit}>
                   <Field label="Deposit amount (mUSDC)">
                     <input type="number" step="any" value={depositAmount} onChange={(event) => setDepositAmount(event.target.value)} placeholder="10000" />
                   </Field>
@@ -185,7 +185,7 @@ export function InvestorDashboard() {
                   <button className="dashboard-primary-button" type="submit" disabled={isProcessing}>{isProcessing ? 'Confirming...' : 'Deposit and mint shares'}</button>
                 </form>
               ) : (
-                <form className="dashboard-form" onSubmit={handleWithdrawSubmit}>
+                <form key="withdraw" className="dashboard-form dashboard-tab-panel" onSubmit={handleWithdrawSubmit}>
                   <Field label="Shares to redeem (hvSHARE)">
                     <input type="number" step="any" value={withdrawAmount} onChange={(event) => setWithdrawAmount(event.target.value)} placeholder="5000" />
                   </Field>

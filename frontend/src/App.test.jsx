@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import { App } from './main';
 
 beforeAll(() => {
@@ -18,7 +19,7 @@ afterEach(cleanup);
 describe('HOMR landing page interactions', () => {
   it('opens the journey dialog and closes it with Escape', async () => {
     const user = userEvent.setup();
-    render(<App />);
+    render(<MemoryRouter><App /></MemoryRouter>);
 
     // The topbar and hero both expose a "Mulai demo" button — pick the topbar one.
     const ctaButtons = screen.getAllByRole('button', { name: 'Mulai demo' });
@@ -26,12 +27,12 @@ describe('HOMR landing page interactions', () => {
     expect(screen.getByRole('dialog')).toBeTruthy();
 
     await user.keyboard('{Escape}');
-    expect(screen.queryByRole('dialog')).toBeNull();
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
   it('chooses the borrower demo and updates its journey', async () => {
     const user = userEvent.setup();
-    render(<App />);
+    render(<MemoryRouter><App /></MemoryRouter>);
 
     await user.click(screen.getAllByRole('button', { name: 'Mulai demo' })[0]);
     await user.click(screen.getByRole('button', { name: /Borrower/ }));
@@ -43,7 +44,7 @@ describe('HOMR landing page interactions', () => {
 
   it('switches persona tabs and toggles the mobile menu state', async () => {
     const user = userEvent.setup();
-    render(<App />);
+    render(<MemoryRouter><App /></MemoryRouter>);
 
     const tablist = screen.getByRole('tablist', { name: 'Pilih perjalanan demo' });
     const borrowerTab = within(tablist).getByRole('tab', { name: /Borrower/ });

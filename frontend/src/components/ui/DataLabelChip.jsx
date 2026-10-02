@@ -8,6 +8,7 @@ const defaultLabels = {
 };
 
 export function DataLabelChip({ type = 'onchain', label }) {
+  if (type === 'onchain') return null;
   const safeType = defaultLabels[type] ? type : 'onchain';
   const displayLabel = label || defaultLabels[safeType];
 
