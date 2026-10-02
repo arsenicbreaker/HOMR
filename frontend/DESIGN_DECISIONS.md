@@ -1,5 +1,18 @@
 # HOUSD Landing Page Design Decisions
 
+## Role dashboard extension
+
+Design read: role-based financial operations dashboards for borrowers, investors, and credit managers, using the landing page's calm, precise visual language. Dials: ENERGY 1, RHYTHM 2, MOTION 1.
+
+- Color: the navigation rail uses the deepest neutral surface from `Design.md`; lavender is limited to the active rail, focus, and the primary summary border so navigation never becomes a large purple block.
+- Layout: a 96px navigation rail and one selected-content region reduce unrelated actions on screen while keeping nearly all horizontal space available for role-specific data.
+- Typography: the existing Super Sans stack remains the primary voice; mono is limited to amounts, states, and operational metadata where fixed-width scanning helps.
+- Spacing: 12px to 18px internal gaps keep summaries, data rows, forms, and actions dense enough for repeated operational use without collapsing their hierarchy.
+- Cards: one dark primary summary is visually dominant; smaller supporting metrics, medium activity panels, and compact contextual actions vary by importance instead of repeating one card pattern.
+- Navigation: each role receives only the sections supported by its existing responsibilities and handlers, with custom line icons that directly represent overview, property, auction, loan, repayment, portfolio, review, and audit functions. The selected destination uses an 8% primary tint and a 2px inset indicator, while inactive hover uses a 4% neutral surface tint so every item stays integrated with the rail.
+- Motion: transitions are limited to hover, focus, tab changes, and the mobile sidebar drawer so feedback stays immediate without distracting from financial actions.
+- Responsive behavior: the desktop sidebar becomes a keyboard-accessible drawer below 900px, and all multi-column data and forms collapse to one column without horizontal overflow.
+
 Design read: a Superhuman-inspired dark UI for a hackathon RWA landing page, aimed at judges and prospective users who value clarity, speed and verifiable proof. Dials: ENERGY 1, RHYTHM 4, MOTION 1.
 
 - Color: near-black surfaces (`#0B0B0D`, `#131316`, `#1A1A1E`) with a single electric-violet accent (`#7C7CFF`) used sparingly for focus rings, the active demo tab and one status dot. State colors (`#7CFFB2` onchain, `#FFD66B` offchain, `#FF8FA3` simulated) appear only inside mono chips.
