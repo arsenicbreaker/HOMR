@@ -8,7 +8,7 @@ export const CONTRACT_ADDRESSES = {
 
 export const CHAIN_CONFIG = {
   chainId: Number(import.meta.env.VITE_CHAIN_ID || 97), // BNB Smart Chain Testnet (default 97)
-  chainName: 'BNB Smart Chain Testnet',
-  rpcUrl: import.meta.env.VITE_RPC_URL || 'https://data-seed-prebsc-1-s1.bnbchain.org:8545',
+  chainName: Number(import.meta.env.VITE_CHAIN_ID || 97) === 31337 ? 'Local development' : 'BNB Smart Chain Testnet',
+  rpcUrl: import.meta.env.VITE_RPC_URL || (Number(import.meta.env.VITE_CHAIN_ID || 97) === 31337 ? 'http://127.0.0.1:8545' : 'https://bsc-testnet-rpc.publicnode.com'),
   blockExplorer: import.meta.env.VITE_EXPLORER_URL || 'https://testnet.bscscan.com'
 };

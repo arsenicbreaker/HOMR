@@ -15,6 +15,7 @@ export async function approveBorrower(
         account: walletClient.account!,
     });
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    if (receipt.status !== 'success') throw new Error('APPROVAL_REVERTED');
     return { txHash: hash, blockNumber: receipt.blockNumber };
 }
 
@@ -28,6 +29,7 @@ export async function startAuction(commitDuration: bigint, revealDuration: bigin
         account: walletClient.account!,
     });
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    if (receipt.status !== 'success') throw new Error('AUCTION_START_REVERTED');
     return { txHash: hash, blockNumber: receipt.blockNumber };
 }
 
@@ -40,5 +42,6 @@ export async function finalizeAuction() {
         account: walletClient.account!,
     });
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    if (receipt.status !== 'success') throw new Error('AUCTION_FINALIZE_REVERTED');
     return { txHash: hash, blockNumber: receipt.blockNumber };
 }

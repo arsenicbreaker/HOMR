@@ -116,11 +116,32 @@ const initialSeededData = {
   ]
 };
 
-export function DemoModeProvider({ children }) {
-  const [isDemoMode, setIsDemoMode] = useState(true);
+export function DemoModeProvider({ children, initialDemoMode = false }) {
+  const [isDemoMode, setIsDemoMode] = useState(initialDemoMode);
   const [seededData, setSeededData] = useState(initialSeededData);
+  const [isTransacting, setIsTransacting] = useState(false);
 
   const toggleDemoMode = () => setIsDemoMode(prev => !prev);
+
+  const withdrawDemoVault = (amount) => {
+    const num = Number(amount);
+    const shares = Number(seededData.vault.userShares.replace(/,/g, ''));
+    const available = Number(seededData.vault.availableCapital.replace(/,/g, ''));
+    if (!(num > 0) || num > shares || num > available) throw new Error('Insufficient shares or available capital.');
+    setSeededData(prev => ({ ...prev, vault: {
+      ...prev.vault,
+      userShares: (shares - num).toLocaleString('en-US', { minimumFractionDigits: 2 }),
+      userDeposited: (shares - num).toLocaleString('en-US', { minimumFractionDigits: 2 }),
+      availableCapital: (available - num).toLocaleString('en-US', { minimumFractionDigits: 2 }),
+      tvl: (Number(prev.vault.tvl.replace(/,/g, '')) - num).toLocaleString('en-US', { minimumFractionDigits: 2 })
+    } }));
+  };
+
+  const startDemoAuction = (commitDuration = 3600, revealDuration = 3600) => {
+    setSeededData(prev => ({ ...prev, auction: { ...prev.auction, state: 'CommitPhase', bids: [],
+      commitDeadline: Date.now() + Number(commitDuration) * 1000,
+      revealDeadline: Date.now() + (Number(commitDuration) + Number(revealDuration)) * 1000 } }));
+  };
 
   // Helper actions for demo interaction
   const depositDemoVault = (amount) => {
@@ -262,9 +283,13 @@ export function DemoModeProvider({ children }) {
     <DemoModeContext.Provider
       value={{
         isDemoMode,
+        isTransacting,
+        setIsTransacting,
         toggleDemoMode,
         seededData,
         depositDemoVault,
+        withdrawDemoVault,
+        startDemoAuction,
         commitDemoBid,
         revealDemoBid,
         approveDemoBorrower,

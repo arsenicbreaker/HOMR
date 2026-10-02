@@ -22,7 +22,7 @@ afterEach(cleanup);
 function renderDashboard(Component) {
   return render(
     <Web3Provider>
-      <DemoModeProvider>
+      <DemoModeProvider initialDemoMode>
         <MemoryRouter>
           <Component />
         </MemoryRouter>

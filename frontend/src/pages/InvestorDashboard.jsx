@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useAccount } from 'wagmi';
 import AppLayout from '../components/layout/AppLayout';
 import {
   EmptyState,
@@ -15,6 +16,7 @@ import InboxRow from '../components/ui/InboxRow';
 import TransparencyLedger from '../components/transparency/TransparencyLedger';
 import { useVault } from '../hooks/useVault';
 import { useLoanManager } from '../hooks/useLoanManager';
+import ChainStatus from '../components/layout/ChainStatus';
 
 const investorNavigation = [
   { id: 'overview', icon: 'overview', label: 'Overview', meta: 'Position', group: 'Portfolio' },
@@ -34,9 +36,9 @@ export function InvestorDashboard() {
     userDeposited,
     estimatedApy,
     deposit,
-    withdraw
+    withdraw, isLoading, error, refresh, progress
   } = useVault();
-  const { loans } = useLoanManager();
+  const { loans, isLoading: loansLoading, error: loansError, refresh: refreshLoans } = useLoanManager();
 
   const [activeSection, setActiveSection] = useState('overview');
   const [capitalAction, setCapitalAction] = useState('deposit');
@@ -44,6 +46,8 @@ export function InvestorDashboard() {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [statusMsg, setStatusMsg] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const { address } = useAccount();
+  useEffect(() => { setStatusMsg(null); }, [isDemoMode, address]);
 
   const handleDepositSubmit = async (event) => {
     event.preventDefault();
@@ -55,7 +59,7 @@ export function InvestorDashboard() {
     setIsProcessing(true);
     setStatusMsg({ type: 'info', text: 'Processing deposit...' });
     try {
-      await deposit(value);
+      await deposit(depositAmount);
       setStatusMsg({ type: 'success', text: `Deposited ${value} mUSDC into the vault.` });
       setDepositAmount('');
     } catch (error) {
@@ -75,7 +79,7 @@ export function InvestorDashboard() {
     setIsProcessing(true);
     setStatusMsg({ type: 'info', text: 'Processing share redemption...' });
     try {
-      await withdraw(value);
+      await withdraw(withdrawAmount);
       setStatusMsg({ type: 'success', text: `Redeemed ${value} hvSHARE.` });
       setWithdrawAmount('');
     } catch (error) {
@@ -87,6 +91,8 @@ export function InvestorDashboard() {
 
   const activeLoans = loans.filter((loan) => loan.isActive);
   const hasPosition = parseFloat(String(userShares).replace(/,/g, '')) > 0;
+  const money = (value) => /^\d/.test(String(value)) ? `$${value}` : value;
+  const loanDataUnavailable = loansLoading || Boolean(loansError);
 
   return (
     <AppLayout
@@ -97,6 +103,7 @@ export function InvestorDashboard() {
       workflowLabel={hasPosition ? 'Capital deployed' : 'Ready to fund'}
       workflowDetail={hasPosition ? 'Monitor active loans and repayment activity.' : 'Deposit mUSDC to mint your first vault shares.'}
     >
+      <ChainStatus loading={isLoading || loansLoading} error={error || loansError} refresh={() => { refresh(); refreshLoans(); }} progress={progress} />
       {activeSection === 'overview' && (
         <>
           <PageIntro
@@ -107,26 +114,26 @@ export function InvestorDashboard() {
           />
 
           <SummaryGrid>
-            <PrimarySummary eyebrow="Your portfolio" value={`$${userDeposited}`} unit="mUSDC invested" detail={`${userShares} hvSHARE at $${sharePrice} per share`} />
-            <Metric label="Available capital" value={`$${availableCapital}`} unit="USDC in vault" tone="success" />
-            <Metric label="Active positions" value={activeLoans.length} unit="funded loans" />
-            <Metric label="Projected APY" value={estimatedApy} unit="demo estimate" tone="warning" />
+            <PrimarySummary eyebrow="Your portfolio" value={money(userDeposited)} unit="mUSDC invested" detail={/^\d/.test(String(userShares)) ? `${userShares} hvSHARE at $${sharePrice} per share` : 'Connect a wallet to read your vault position.'} />
+            <Metric label="Available capital" value={money(availableCapital)} unit="USDC in vault" tone="success" />
+            <Metric label="Active positions" value={loanDataUnavailable ? 'Unavailable' : activeLoans.length} unit="funded loans" />
+            <Metric label="Projected APY" value={estimatedApy} unit={isDemoMode ? 'demo estimate' : 'Contract does not accrue interest'} tone="warning" />
           </SummaryGrid>
 
           <div className="dashboard-split dashboard-split--wide">
             <Panel title="Active portfolio" description="The loans currently carrying deployed vault capital." chipType={isDemoMode ? 'simulated' : 'onchain'}>
-              {activeLoans.length === 0 ? (
+              {loanDataUnavailable ? <p>Waiting for loan data.</p> : activeLoans.length === 0 ? (
                 <EmptyState title="No active investments" detail="Funded loans will appear after an auction is finalized." />
               ) : (
                 <div className="dashboard-row-list">
                   {activeLoans.slice(0, 3).map((loan) => (
-                    <InboxRow key={loan.id} statusDotColor="var(--badge-success)" title={`Loan #${loan.id} · $${loan.principal}`} subtitle={`${loan.rate}% APR · ${loan.term} months`} dataType={isDemoMode ? 'simulated' : 'onchain'} customRight={<span className="dashboard-row-status">{loan.maturityDate}</span>} />
+                    <InboxRow key={loan.id} statusDotColor="var(--badge-success)" title={`Loan #${loan.id} · $${loan.principal}`} subtitle={`${loan.rate}% APR · ${loan.term} months`} dataType={isDemoMode ? 'simulated' : 'onchain'} customRight={<span className="dashboard-row-status">{loan.maturityDate || 'Maturity not recorded'}</span>} />
                   ))}
                 </div>
               )}
               <div className="dashboard-inline-stats">
-                <span><small>Vault TVL</small><strong>${tvl}</strong></span>
-                <span><small>Deployed</small><strong>${deployedCapital}</strong></span>
+                <span><small>Vault TVL</small><strong>{money(tvl)}</strong></span>
+                <span><small>Deployed</small><strong>{money(deployedCapital)}</strong></span>
               </div>
             </Panel>
 
@@ -156,7 +163,7 @@ export function InvestorDashboard() {
           <div className="dashboard-split">
             <Panel title="Your vault balance" description="Current position before this transaction.">
               <MetricGrid compact>
-                <Metric label="Deposited" value={userDeposited} unit="mUSDC" />
+                <Metric label="Position value" value={userDeposited} unit="mUSDC" />
                 <Metric label="Share balance" value={userShares} unit="hvSHARE" tone="accent" />
               </MetricGrid>
             </Panel>
@@ -199,7 +206,7 @@ export function InvestorDashboard() {
             chipType={isDemoMode ? 'simulated' : 'onchain'}
           />
           <Panel title="Funded loan portfolio" description="Active principal, rate, term, and maturity status.">
-            {activeLoans.length === 0 ? (
+            {loanDataUnavailable ? <p>Waiting for loan data.</p> : activeLoans.length === 0 ? (
               <EmptyState title="No active investments" detail="Funded loans will appear here after an auction is finalized." />
             ) : (
               <div className="dashboard-row-list">
@@ -210,7 +217,7 @@ export function InvestorDashboard() {
                     title={`Loan #${loan.id} · ${loan.borrower.slice(0, 8)}...`}
                     subtitle={`Principal $${loan.principal} · ${loan.rate}% APR · ${loan.term} months`}
                     dataType={isDemoMode ? 'simulated' : 'onchain'}
-                    customRight={<span className="dashboard-row-status">Matures {loan.maturityDate}</span>}
+                    customRight={<span className="dashboard-row-status">{loan.maturityDate ? `Matures ${loan.maturityDate}` : 'Maturity not recorded'}</span>}
                   />
                 ))}
               </div>

@@ -18,6 +18,9 @@ import TransparencyLedger from '../components/transparency/TransparencyLedger';
 import { useAuction } from '../hooks/useAuction';
 import { useLoanManager } from '../hooks/useLoanManager';
 import { fetchApplications, reviewApplication, fetchAdminStatus } from '../api/client';
+import { formatUnits } from 'viem';
+import { useAccount } from 'wagmi';
+import ChainStatus from '../components/layout/ChainStatus';
 
 const adminNavigation = [
   { id: 'overview', icon: 'overview', label: 'Overview', meta: 'Operations', group: 'Operations' },
@@ -30,13 +33,14 @@ const adminNavigation = [
 ];
 
 export function AdminPanel() {
-  const { isDemoMode, state: auctionState, bids, approveBorrower, startAuction, finalizeAuction } = useAuction();
-  const { loans } = useLoanManager();
+  const { isDemoMode, state: auctionState, bids, approveBorrower, startAuction, finalizeAuction,
+    decimals, canStart, canFinalize, creditManager, isLoading, error, refresh, progress } = useAuction();
+  const { loans, isLoading: loansLoading, error: loansError, refresh: refreshLoans } = useLoanManager();
 
   const [activeSection, setActiveSection] = useState('overview');
-  const [borrowerAddress, setBorrowerAddress] = useState('0x70997970C51812dc3A010C7d01b50e0d17dc79C8');
+  const [borrowerAddress, setBorrowerAddress] = useState('');
   const [maxPrincipal, setMaxPrincipal] = useState('50000');
-  const [propertyHash, setPropertyHash] = useState('0xa7f8...e4b (Jakarta Residential Cluster B2)');
+  const [propertyHash, setPropertyHash] = useState('');
   const [commitDuration, setCommitDuration] = useState('3600');
   const [revealDuration, setRevealDuration] = useState('3600');
   const [statusMsg, setStatusMsg] = useState(null);
@@ -44,12 +48,14 @@ export function AdminPanel() {
   const [applications, setApplications] = useState([]);
   const [adminStatus, setAdminStatus] = useState(null);
   const [dataStatus, setDataStatus] = useState('loading');
+  const { address } = useAccount();
+  useEffect(() => { setStatusMsg(null); }, [isDemoMode, address]);
 
   const loadData = useCallback(async () => {
     setDataStatus('loading');
     try {
       const [applicationsResponse, statusResponse] = await Promise.all([
-        fetchApplications().catch(() => null),
+        fetchApplications(),
         fetchAdminStatus().catch(() => null)
       ]);
       if (applicationsResponse?.applications) setApplications(applicationsResponse.applications);
@@ -62,7 +68,7 @@ export function AdminPanel() {
 
   useEffect(() => {
     if (!isDemoMode) loadData();
-    else setDataStatus('ready');
+    else { setApplications([]); setAdminStatus(null); setDataStatus('ready'); }
   }, [isDemoMode, loadData]);
 
   const withProcessing = async (loadingText, action, successText, fallbackText) => {
@@ -88,7 +94,7 @@ export function AdminPanel() {
       `Granted a ${maxPrincipal} mUSDC limit to ${borrowerAddress.slice(0, 8)}...`,
       'Approval failed.'
     );
-    if (completed && !isDemoMode) setTimeout(loadData, 2000);
+    if (completed && !isDemoMode) loadData();
   };
 
   const handleReviewApplication = async (application) => {
@@ -96,20 +102,20 @@ export function AdminPanel() {
       'Submitting the review decision through the Admin API...',
       () => reviewApplication(application.id, {
         decision: 'APPROVED',
-        maxPrincipal: (application.requestedAmount || '50000000000').toString(),
+        maxPrincipal: application.requestedAmount.toString(),
         reviewedBy: 'Credit Manager Admin',
         reviewNote: `Approved for property collateral ${application.propertyHash.slice(0, 16)}...`
       }),
       `Application #${application.id.slice(0, 8)} approved.`,
       'Application review failed.'
     );
-    if (completed) loadData();
+    if (completed) { loadData(); refresh(); }
   };
 
   const handleStartAuction = async () => {
     await withProcessing(
       'Starting a new credit auction onchain...',
-      () => startAuction(parseInt(commitDuration, 10), parseInt(revealDuration, 10)),
+      () => startAuction(commitDuration, revealDuration),
       'Auction started. The commit phase is active.',
       'Auction start failed.'
     );
@@ -119,14 +125,14 @@ export function AdminPanel() {
     await withProcessing(
       'Finalizing revealed bids and creating the allocated loan...',
       finalizeAuction,
-      'Auction finalized and capital allocated.',
+      'Auction finalized. Any funded loan is now available in loan monitoring.',
       'Auction finalization failed.'
     );
   };
 
   const pendingApplications = applications.filter((application) => application.status === 'PENDING');
   const activeLoans = loans.filter((loan) => loan.isActive);
-  const auctionStep = auctionState === 'Created' ? 0 : auctionState === 'CommitPhase' ? 1 : auctionState === 'RevealPhase' ? 2 : 3;
+  const auctionStep = ({ Created: 0, CommitPhase: 1, RevealPhase: 2, AwaitingFinalization: 3, Finalized: 4 })[auctionState] ?? 0;
 
   const nextAction = pendingApplications.length > 0
     ? { section: 'applications', label: 'Review pending applications', detail: `${pendingApplications.length} application${pendingApplications.length === 1 ? '' : 's'} need a credit decision.` }
@@ -136,7 +142,7 @@ export function AdminPanel() {
 
   const prefillApproval = (application) => {
     setBorrowerAddress(application.applicant?.walletAddress || '');
-    setMaxPrincipal((Number(application.requestedAmount) / 1e6).toString());
+    setMaxPrincipal(formatUnits(BigInt(application.requestedAmount), 6));
     setPropertyHash(application.propertyHash);
     setActiveSection('approvals');
   };
@@ -150,6 +156,8 @@ export function AdminPanel() {
       workflowLabel={`Auction: ${auctionState}`}
       workflowDetail={nextAction.detail}
     >
+      <ChainStatus loading={isLoading || loansLoading} error={error || loansError} refresh={() => { refresh(); refreshLoans(); }} progress={progress} />
+      {!isDemoMode && !isLoading && !creditManager && <Notice>Onchain credit approval requires a wallet with CREDIT_MANAGER_ROLE. Auction controls require AUCTION_MANAGER_ROLE.</Notice>}
       {statusMsg && <Notice type={statusMsg.type}>{statusMsg.text}</Notice>}
 
       {activeSection === 'overview' && (
@@ -166,10 +174,10 @@ export function AdminPanel() {
           )}
 
           <SummaryGrid>
-            <PrimarySummary eyebrow="Operational queue" value={pendingApplications.length} unit="applications awaiting review" detail={`${applications.length} total applications in the credit database`} />
+            <PrimarySummary eyebrow="Operational queue" value={dataStatus === 'ready' ? pendingApplications.length : dataStatus === 'loading' ? 'Loading' : 'Unavailable'} unit="applications awaiting review" detail={dataStatus === 'ready' ? `${applications.length} total applications in the credit database` : 'Open Applications to check or retry the API connection.'} />
             <Metric label="Auction state" value={auctionState} unit="current lifecycle" tone="accent" />
-            <Metric label="Submitted bids" value={bids.length} unit="current auction" />
-            <Metric label="Active loans" value={activeLoans.length} unit="monitored" tone="success" />
+            <Metric label="Revealed bids" value={isLoading || error ? 'Unavailable' : bids.length} unit="current auction" />
+            <Metric label="Active loans" value={loansLoading || loansError ? 'Unavailable' : activeLoans.length} unit="monitored" tone="success" />
           </SummaryGrid>
 
           <div className="dashboard-split dashboard-split--wide">
@@ -199,7 +207,7 @@ export function AdminPanel() {
             {dataStatus === 'loading' ? (
               <Notice>Loading applications...</Notice>
             ) : dataStatus === 'error' ? (
-              <Notice type="error">Applications could not be loaded. Retry from the platform overview.</Notice>
+              <Notice type="error">Applications could not be loaded. <button type="button" className="dashboard-secondary-button" onClick={loadData}>Retry applications</button></Notice>
             ) : applications.length === 0 ? (
               <EmptyState title="No applications in the queue" detail="New borrower applications will appear here for review." />
             ) : (
@@ -212,12 +220,12 @@ export function AdminPanel() {
                         <DataLabelChip type={application.status === 'APPROVED' ? 'onchain' : application.status === 'REJECTED' ? 'simulated' : 'pending'} label={application.status} />
                       </div>
                       <p>{application.applicant?.walletAddress}</p>
-                      <small>Property: {application.propertyHash} · Requested ${(Number(application.requestedAmount) / 1e6).toLocaleString()} USDC at {application.requestedRate / 100}%</small>
+                      <small>Property: {application.propertyHash} · Requested {formatUnits(BigInt(application.requestedAmount), 6)} mUSDC at {application.requestedRate / 100}%</small>
                     </div>
                     {application.status === 'PENDING' && (
                       <div className="dashboard-row-actions">
-                        <button className="dashboard-secondary-button" type="button" onClick={() => prefillApproval(application)}>Prepare onchain approval</button>
-                        <button className="dashboard-primary-button" type="button" disabled={isProcessing} onClick={() => handleReviewApplication(application)}>Approve database review</button>
+                        <button className="dashboard-secondary-button" type="button" disabled={decimals === undefined} onClick={() => prefillApproval(application)}>Prepare wallet approval</button>
+                        <button className="dashboard-primary-button" type="button" disabled={isProcessing || !adminStatus} onClick={() => handleReviewApplication(application)}>Approve with API signer</button>
                       </div>
                     )}
                   </article>
@@ -238,7 +246,7 @@ export function AdminPanel() {
                 <Field label="Maximum approved principal (mUSDC)"><input type="number" value={maxPrincipal} onChange={(event) => setMaxPrincipal(event.target.value)} /></Field>
                 <Field label="Verified property hash / registry ID"><input type="text" value={propertyHash} onChange={(event) => setPropertyHash(event.target.value)} /></Field>
               </div>
-              <button className="dashboard-primary-button" type="submit" disabled={isProcessing}>{isProcessing ? 'Granting approval...' : 'Grant credit approval onchain'}</button>
+              <button className="dashboard-primary-button" type="submit" disabled={isProcessing || !creditManager}>{isProcessing ? 'Granting approval...' : 'Grant credit approval onchain'}</button>
             </form>
           </Panel>
         </>
@@ -253,11 +261,11 @@ export function AdminPanel() {
                 <Field label="Commit duration (seconds)"><input type="number" value={commitDuration} onChange={(event) => setCommitDuration(event.target.value)} /></Field>
                 <Field label="Reveal duration (seconds)"><input type="number" value={revealDuration} onChange={(event) => setRevealDuration(event.target.value)} /></Field>
               </div>
-              <button className="dashboard-primary-button" type="button" disabled={isProcessing} onClick={handleStartAuction}>{isProcessing ? 'Starting...' : 'Start new auction cycle'}</button>
+              <button className="dashboard-primary-button" type="button" disabled={isProcessing || !canStart} onClick={handleStartAuction}>{isProcessing ? 'Starting...' : 'Start new auction cycle'}</button>
             </Panel>
             <Panel title="Finalize allocation" description="Finalize revealed bids and create the allocated loan through Loan Manager." className="dashboard-panel--accent">
               <p className="dashboard-action-copy">Current phase: {auctionState}. Finalization preserves the existing deterministic allocation flow.</p>
-              <button className="dashboard-primary-button" type="button" disabled={isProcessing} onClick={handleFinalizeAuction}>{isProcessing ? 'Finalizing...' : 'Finalize auction and allocate capital'}</button>
+              <button className="dashboard-primary-button" type="button" disabled={isProcessing || !canFinalize} onClick={handleFinalizeAuction}>{isProcessing ? 'Finalizing...' : 'Finalize auction and allocate capital'}</button>
             </Panel>
           </div>
         </>
@@ -266,9 +274,9 @@ export function AdminPanel() {
       {activeSection === 'bids' && (
         <>
           <PageIntro eyebrow="Market operations" title="Bid monitoring" description="Monitor commitments and revealed terms for the current auction." chipType={isDemoMode ? 'simulated' : 'onchain'} />
-          <Panel title="Bid evaluation queue" description="Status and terms reported by the existing auction data source.">
-            {bids.length === 0 ? (
-              <EmptyState title="No bids submitted" detail="Borrower bids will appear after commitments enter the current auction." />
+          <Panel title="Bid evaluation queue" description="Revealed bids read directly from the current auction. Sealed commitments are not enumerable in this contract.">
+            {isLoading || error ? <p>Waiting for auction data.</p> : bids.length === 0 ? (
+              <EmptyState title="No revealed bids" detail="Bid terms appear here after a borrower reveals them onchain." />
             ) : (
               <div className="dashboard-row-list">
                 {bids.map((bid, index) => (
@@ -284,12 +292,12 @@ export function AdminPanel() {
         <>
           <PageIntro eyebrow="Market operations" title="Loan monitoring" description="Track loans created after auction allocation without changing servicing logic." chipType={isDemoMode ? 'simulated' : 'onchain'} />
           <Panel title="Active loan book" description="Principal, borrower, pricing, and maturity for monitored loans.">
-            {activeLoans.length === 0 ? (
+            {loansLoading || loansError ? <p>Waiting for loan data.</p> : activeLoans.length === 0 ? (
               <EmptyState title="No active loans" detail="Loans will appear here when an auction allocation creates them." />
             ) : (
               <div className="dashboard-row-list">
                 {activeLoans.map((loan) => (
-                  <InboxRow key={loan.id} statusDotColor="var(--badge-success)" title={`Loan #${loan.id} · ${loan.borrower.slice(0, 10)}...`} subtitle={`Principal $${loan.principal} · ${loan.rate}% APR · ${loan.term} months`} dataType={isDemoMode ? 'simulated' : 'onchain'} customRight={<span className="dashboard-row-status">Matures {loan.maturityDate}</span>} />
+                  <InboxRow key={loan.id} statusDotColor="var(--badge-success)" title={`Loan #${loan.id} · ${loan.borrower.slice(0, 10)}...`} subtitle={`Principal $${loan.principal} · ${loan.rate}% APR · ${loan.term} months`} dataType={isDemoMode ? 'simulated' : 'onchain'} customRight={<span className="dashboard-row-status">{loan.maturityDate ? `Matures ${loan.maturityDate}` : 'Maturity not recorded'}</span>} />
                 ))}
               </div>
             )}

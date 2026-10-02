@@ -2,24 +2,26 @@ import React from 'react';
 import InboxRow from '../ui/InboxRow';
 import TxLink from '../ui/TxLink';
 import { useTransparencyEvents } from '../../hooks/useTransparencyEvents';
+import ChainStatus from '../layout/ChainStatus';
 
 export function TransparencyLedger({ embedded = false }) {
-  const { events } = useTransparencyEvents();
+  const { events, isDemoMode, isLoading, error, refresh, fromBlock, toBlock } = useTransparencyEvents();
 
   return (
     <section className={`transparency-ledger${embedded ? ' transparency-ledger--embedded' : ''}`}>
       <header className="transparency-ledger__header">
         <div>
           <h2>Transparency ledger</h2>
-          <p>Contract events, borrower approvals, and verified offchain references.</p>
+          <p>{isDemoMode ? 'Simulated workflow events.' : `Latest 50 events in the last 2,000 blocks${fromBlock ? ` (${fromBlock} to ${toBlock})` : ''}. Older history is available on the block explorer.`}</p>
         </div>
         <span className="transparency-ledger__count">{events.length} events</span>
       </header>
 
-      {events.length === 0 ? (
+      <ChainStatus loading={isLoading} error={error} refresh={refresh} />
+      {!isLoading && !error && events.length === 0 ? (
         <div className="dashboard-empty">
-          <strong>No recorded activity</strong>
-          <p>Verified workflow events will appear here as they occur.</p>
+          <strong>No activity in this window</strong>
+          <p>New contract events will appear here after confirmation.</p>
         </div>
       ) : (
         <div className="dashboard-row-list">

@@ -11,7 +11,13 @@ vi.mock('wagmi', () => ({
   useReadContract: () => ({ data: null }),
   useWriteContract: () => ({ writeContractAsync: vi.fn() }),
   useConnect: () => ({ connect: vi.fn(), connectors: [] }),
-  useDisconnect: () => ({ disconnect: vi.fn() })
+  useDisconnect: () => ({ disconnect: vi.fn() }),
+  useSwitchChain: () => ({ switchChain: vi.fn() })
+}));
+
+vi.mock('../hooks/useProtocol', () => ({
+  useProtocolQuery: () => ({ refetch: vi.fn() }),
+  useProtocolTransaction: () => ({ transact: vi.fn(), refresh: vi.fn() })
 }));
 
 afterEach(cleanup);
@@ -19,7 +25,7 @@ afterEach(cleanup);
 describe('Auction State Transitions & Commit/Reveal Bidding', () => {
   const renderBorrower = () => {
     return render(
-      <DemoModeProvider>
+      <DemoModeProvider initialDemoMode>
         <MemoryRouter>
           <BorrowerDashboard />
         </MemoryRouter>

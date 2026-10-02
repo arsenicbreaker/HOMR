@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
 import AppLayout from '../components/layout/AppLayout';
 import {
@@ -18,6 +18,9 @@ import TransparencyLedger from '../components/transparency/TransparencyLedger';
 import { useAuction } from '../hooks/useAuction';
 import { useLoanManager } from '../hooks/useLoanManager';
 import { createApplication } from '../api/client';
+import { bidValues, parseAmount } from '../contracts/protocol';
+import { CHAIN_CONFIG, CONTRACT_ADDRESSES } from '../contracts/addresses';
+import ChainStatus from '../components/layout/ChainStatus';
 
 const borrowerNavigation = [
   { id: 'overview', icon: 'overview', label: 'Overview', meta: 'Status', group: 'Your financing' },
@@ -29,29 +32,47 @@ const borrowerNavigation = [
 ];
 
 export function BorrowerDashboard() {
-  const { isDemoMode, state: auctionState, userApproval, commitBid, revealBid } = useAuction();
-  const { loans, repayLoan } = useLoanManager();
+  const { isDemoMode, state: auctionState, userApproval, commitBid, revealBid, canCommit, canReveal,
+    commitDeadline, revealDeadline, commitment, alreadyRevealed, decimals, isLoading, error, refresh, progress } = useAuction();
+  const { loans, repayLoan, isLoading: loansLoading, error: loansError, refresh: refreshLoans, progress: repayProgress } = useLoanManager({ borrowerOnly: true });
   const { address } = useAccount();
 
   const [activeSection, setActiveSection] = useState('overview');
   const [auctionAction, setAuctionAction] = useState('commit');
   const [showAppForm, setShowAppForm] = useState(false);
-  const [appName, setAppName] = useState('Budi Pratama');
-  const [appProperty, setAppProperty] = useState('0xa7f8...e4b (Jakarta Residential Cluster B2)');
+  const [appName, setAppName] = useState('');
+  const [appProperty, setAppProperty] = useState('');
   const [appAmount, setAppAmount] = useState('50000');
   const [appRate, setAppRate] = useState('9.5');
   const [appTerm, setAppTerm] = useState('12');
   const [bidAmount, setBidAmount] = useState('50000');
   const [bidRate, setBidRate] = useState('9.5');
   const [bidTerm, setBidTerm] = useState('12');
-  const [bidSalt, setBidSalt] = useState('housd_demo_salt_2026');
-  const [repayAmount, setRepayAmount] = useState('50000');
+  const [bidSalt, setBidSalt] = useState(() => isDemoMode ? 'housd_demo_salt_2026' : Array.from(crypto.getRandomValues(new Uint8Array(32)), (byte) => byte.toString(16).padStart(2, '0')).join(''));
   const [statusMsg, setStatusMsg] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [bidStorageWarning, setBidStorageWarning] = useState('');
+  const bidStorageKey = !isDemoMode && address && commitDeadline
+    ? `homr-bid:${CHAIN_CONFIG.chainId}:${CONTRACT_ADDRESSES.CreditAuction.toLowerCase()}:${address.toLowerCase()}:${commitDeadline}` : null;
+
+  useEffect(() => {
+    setBidAmount('50000'); setBidRate('9.5'); setBidTerm('12');
+    setBidSalt(isDemoMode ? 'housd_demo_salt_2026' : Array.from(crypto.getRandomValues(new Uint8Array(32)), (byte) => byte.toString(16).padStart(2, '0')).join(''));
+    setBidStorageWarning('');
+    if (!bidStorageKey) return;
+    try {
+      const record = JSON.parse(localStorage.getItem(bidStorageKey) || 'null');
+      const saved = record?.entries?.[commitment] || record?.latest;
+      if (saved) { setBidAmount(saved.amount); setBidRate(saved.rate); setBidTerm(saved.term); setBidSalt(saved.salt); }
+    } catch { setBidStorageWarning('This browser cannot restore your bid. Enter the exact original terms and salt before revealing.'); }
+  }, [bidStorageKey, isDemoMode, commitment]);
+
+  useEffect(() => { setStatusMsg(null); }, [isDemoMode, address]);
 
   const activeLoans = loans.filter((loan) => loan.isActive);
   const isApproved = Boolean(userApproval?.isApproved);
-  const workflowStage = !isApproved ? 1 : auctionState === 'Finalized' ? 3 : 2;
+  const workflowStage = activeLoans.length > 0 ? 3 : isApproved ? 2 : 0;
+  const approvalStatus = isLoading ? 'Loading' : error ? 'Unavailable' : !isDemoMode && !address ? 'Connect wallet' : isApproved ? 'Approved' : 'Not approved';
   const outstandingPrincipal = activeLoans.reduce((total, loan) => total + parseFloat(String(loan.principal).replace(/,/g, '')), 0);
 
   const withProcessing = async (loadingText, action, successText, fallbackText) => {
@@ -73,15 +94,19 @@ export function BorrowerDashboard() {
     event.preventDefault();
     const submitted = await withProcessing(
       'Submitting application to the credit database...',
-      () => createApplication({
-        walletAddress: address || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+      () => {
+        if (isDemoMode) return;
+        if (!address) throw new Error('Connect your borrower wallet before applying.');
+        if (decimals === undefined) throw new Error('Wait for the token configuration to load.');
+        return createApplication({
+        walletAddress: address,
         displayName: appName,
         propertyHash: appProperty,
-        requestedAmount: (parseFloat(appAmount) * 1e6).toString(),
-        requestedRate: Math.round(parseFloat(appRate) * 100),
-        requestedTerm: parseInt(appTerm, 10) * 30 * 86400
-      }),
-      'Financing application submitted. A Credit Manager will review the property documents.',
+        requestedAmount: parseAmount(appAmount, 6).toString(),
+        requestedRate: Number(parseAmount(appRate, 2, true)),
+        requestedTerm: Number(parseAmount(appTerm, 0)) * 30 * 86400
+      }); },
+      isDemoMode ? 'Demo application simulated. No request was sent.' : 'Financing application submitted. A Credit Manager will review the property documents.',
       'Application submission failed.'
     );
     if (submitted) setShowAppForm(false);
@@ -91,7 +116,20 @@ export function BorrowerDashboard() {
     event.preventDefault();
     await withProcessing(
       'Submitting commitment hash onchain...',
-      () => commitBid({ amount: bidAmount, rate: bidRate, term: bidTerm, salt: bidSalt }),
+      async () => {
+        const input = { amount: bidAmount, rate: bidRate, term: bidTerm, salt: bidSalt };
+        if (bidStorageKey) {
+          const { hash } = bidValues(input, decimals, address);
+          try {
+            const previous = JSON.parse(localStorage.getItem(bidStorageKey) || '{}');
+            localStorage.setItem(bidStorageKey, JSON.stringify({
+              entries: { ...previous.entries, [hash]: input }, latest: input
+            }));
+          }
+          catch { throw new Error('Bid could not be saved in this browser. Enable local storage before committing.'); }
+        }
+        return commitBid(input);
+      },
       'Bid commitment submitted.',
       'Commit bid failed.'
     );
@@ -107,11 +145,11 @@ export function BorrowerDashboard() {
     );
   };
 
-  const handleRepaySubmit = async (event, loanId) => {
+  const handleRepaySubmit = async (event, loanId, principal) => {
     event.preventDefault();
     await withProcessing(
       'Processing principal repayment...',
-      () => repayLoan(loanId, repayAmount),
+      () => repayLoan(loanId, principal),
       `Loan #${loanId} repayment submitted.`,
       'Loan repayment failed.'
     );
@@ -134,6 +172,7 @@ export function BorrowerDashboard() {
       workflowLabel={isApproved ? auctionState : 'Credit review'}
       workflowDetail={nextAction.detail}
     >
+      <ChainStatus loading={isLoading || loansLoading} error={error || loansError} refresh={() => { refresh(); refreshLoans(); }} progress={progress || repayProgress} />
       {statusMsg && <Notice type={statusMsg.type}>{statusMsg.text}</Notice>}
 
       {activeSection === 'overview' && (
@@ -146,10 +185,10 @@ export function BorrowerDashboard() {
           />
 
           <SummaryGrid>
-            <PrimarySummary eyebrow="Approved borrowing limit" value={isApproved ? `$${userApproval.maxPrincipal}` : 'Pending'} unit={isApproved ? 'mUSDC available for auction' : 'Credit assessment in progress'} detail={userApproval?.propertyHash || 'Property reference awaiting approval'} />
-            <Metric label="Outstanding" value={`$${outstandingPrincipal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`} unit="active principal" />
+            <PrimarySummary eyebrow="Approved borrowing limit" value={isApproved ? `$${userApproval.maxPrincipal}` : approvalStatus} unit={isApproved ? 'mUSDC available for auction' : 'Onchain approval status'} detail={userApproval?.propertyHash || 'No approved property reference loaded'} />
+            <Metric label="Outstanding" value={loansLoading || loansError ? 'Unavailable' : !isDemoMode && !address ? 'Connect wallet' : `$${outstandingPrincipal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`} unit="active principal" />
             <Metric label="Auction phase" value={auctionState} unit="current cycle" tone="accent" />
-            <Metric label="Collateral" value={isApproved ? 'Verified' : 'In review'} unit="offchain assessment" tone={isApproved ? 'success' : 'warning'} />
+            <Metric label="Property approval" value={approvalStatus} unit="recorded approval" tone={isApproved ? 'success' : 'warning'} />
           </SummaryGrid>
 
           <div className="dashboard-split dashboard-split--wide">
@@ -157,7 +196,7 @@ export function BorrowerDashboard() {
               <Workflow
                 current={workflowStage}
                 steps={[
-                  { label: 'Application submitted', detail: 'Borrower and property information enters review.' },
+                  { label: 'Submit application', detail: 'Send borrower and property information for review.' },
                   { label: 'Credit assessment', detail: 'Property and credit limit are verified offchain.' },
                   { label: 'Borrowing auction', detail: 'Approved terms are committed and revealed onchain.' },
                   { label: 'Active loan', detail: 'Allocated principal becomes an active loan.' },
@@ -192,9 +231,9 @@ export function BorrowerDashboard() {
 
           <Panel title="Credit approval" description="Only the approval result and property reference move into the auction workflow." chipType={isApproved ? 'onchain' : 'pending'}>
             <MetricGrid compact>
-              <Metric label="Review status" value={isApproved ? 'Approved' : 'Pending'} tone={isApproved ? 'success' : 'warning'} />
+              <Metric label="Approval status" value={approvalStatus} tone={isApproved ? 'success' : 'warning'} />
               <Metric label="Maximum principal" value={isApproved ? `$${userApproval.maxPrincipal}` : 'Not available'} unit="mUSDC" />
-              <Metric label="Property reference" value={userApproval?.propertyHash || appProperty} detail="Verified offchain" />
+              <Metric label="Property reference" value={userApproval?.propertyHash || 'No approved reference'} detail="Reference recorded with approval" />
             </MetricGrid>
           </Panel>
 
@@ -228,6 +267,9 @@ export function BorrowerDashboard() {
           />
 
           <Panel title="Auction action" description="Only the selected phase form is visible.">
+            {commitDeadline && <Notice>Commit deadline: {new Date(commitDeadline).toLocaleString()}. Reveal deadline: {new Date(revealDeadline).toLocaleString()}.</Notice>}
+            {!isDemoMode && alreadyRevealed && <Notice>This contract retains your previous reveal. This wallet cannot reveal another bid, even in a later cycle.</Notice>}
+            {bidStorageWarning && <Notice type="error">{bidStorageWarning}</Notice>}
             <div className="dashboard-tabs" role="tablist" aria-label="Auction action">
               <button type="button" role="tab" aria-selected={auctionAction === 'commit'} className={auctionAction === 'commit' ? 'is-active' : ''} onClick={() => setAuctionAction('commit')}>1. Commit bid</button>
               <button type="button" role="tab" aria-selected={auctionAction === 'reveal'} className={auctionAction === 'reveal' ? 'is-active' : ''} onClick={() => setAuctionAction('reveal')}>2. Reveal terms</button>
@@ -235,23 +277,27 @@ export function BorrowerDashboard() {
 
             {auctionAction === 'commit' ? (
               <form className="dashboard-form" onSubmit={handleCommitSubmit}>
-                <Notice>Keep the salt phrase. The reveal step must use the exact same amount, rate, term, and salt.</Notice>
+                <Notice>Keep a private copy of these terms and salt. They are saved in this browser before committing; clearing browser data removes them.</Notice>
                 <div className="dashboard-form-grid dashboard-form-grid--three">
                   <Field label="Principal amount (mUSDC)"><input type="number" value={bidAmount} onChange={(event) => setBidAmount(event.target.value)} /></Field>
                   <Field label="Interest rate (% APR)"><input type="number" step="0.1" value={bidRate} onChange={(event) => setBidRate(event.target.value)} /></Field>
                   <Field label="Term (months)"><input type="number" value={bidTerm} onChange={(event) => setBidTerm(event.target.value)} /></Field>
                 </div>
                 <Field label="Secret salt phrase"><input type="text" value={bidSalt} onChange={(event) => setBidSalt(event.target.value)} /></Field>
-                <button className="dashboard-primary-button" type="submit" disabled={isProcessing || (!isDemoMode && auctionState !== 'CommitPhase')}>{isProcessing ? 'Committing...' : 'Commit bid hash'}</button>
+                <button className="dashboard-primary-button" type="submit" disabled={isProcessing || !canCommit}>{isProcessing ? 'Committing...' : 'Commit bid hash'}</button>
               </form>
             ) : (
               <form className="dashboard-form" onSubmit={handleRevealSubmit}>
+                <Field label="Original principal (mUSDC)"><input value={bidAmount} onChange={(event) => setBidAmount(event.target.value)} /></Field>
+                <Field label="Original rate (% APR)"><input value={bidRate} onChange={(event) => setBidRate(event.target.value)} /></Field>
+                <Field label="Original term (months)"><input value={bidTerm} onChange={(event) => setBidTerm(event.target.value)} /></Field>
+                <Field label="Original secret salt"><input value={bidSalt} onChange={(event) => setBidSalt(event.target.value)} /></Field>
                 <div className="dashboard-review-list">
                   <span><small>Amount</small><strong>${bidAmount} mUSDC</strong></span>
                   <span><small>Rate</small><strong>{bidRate}% APR</strong></span>
                   <span><small>Term</small><strong>{bidTerm} months</strong></span>
                 </div>
-                <button className="dashboard-primary-button" type="submit" disabled={isProcessing || (!isDemoMode && auctionState !== 'RevealPhase')}>{isProcessing ? 'Verifying...' : 'Reveal and verify bid'}</button>
+                <button className="dashboard-primary-button" type="submit" disabled={isProcessing || !canReveal}>{isProcessing ? 'Verifying...' : 'Reveal and verify bid'}</button>
               </form>
             )}
           </Panel>
@@ -262,12 +308,12 @@ export function BorrowerDashboard() {
         <>
           <PageIntro eyebrow="Loan management" title="Active loan" description="Review principal, borrowing terms, collateral reference, and maturity for each active loan." chipType={isDemoMode ? 'simulated' : 'onchain'} />
           <Panel title="Current financing" description="Loans created after auction allocation.">
-            {activeLoans.length === 0 ? (
+            {loansLoading || loansError ? <p>Waiting for loan data.</p> : activeLoans.length === 0 ? (
               <EmptyState title="No active loan" detail="An active loan will appear after your borrowing auction is finalized." />
             ) : (
               <div className="dashboard-row-list">
                 {activeLoans.map((loan) => (
-                  <InboxRow key={loan.id} statusDotColor="var(--badge-success)" title={`Active loan #${loan.id}`} subtitle={`Principal $${loan.principal} · ${loan.rate}% APR · ${loan.term} months · Collateral ${loan.propertyHash}`} dataType={isDemoMode ? 'simulated' : 'onchain'} customRight={<span className="dashboard-row-status">Matures {loan.maturityDate}</span>} />
+                  <InboxRow key={loan.id} statusDotColor="var(--badge-success)" title={`Active loan #${loan.id}`} subtitle={`Principal $${loan.principal} · ${loan.rate}% APR · ${loan.term} months · Collateral ${loan.propertyHash}`} dataType={isDemoMode ? 'simulated' : 'onchain'} customRight={<span className="dashboard-row-status">{loan.maturityDate ? `Matures ${loan.maturityDate}` : 'Maturity not recorded'}</span>} />
                 ))}
               </div>
             )}
@@ -278,12 +324,12 @@ export function BorrowerDashboard() {
       {activeSection === 'repayment' && (
         <>
           <PageIntro eyebrow="Loan management" title="Repayment" description="Select an active loan and submit principal repayment through the existing Loan Manager flow." chipType={isDemoMode ? 'simulated' : 'onchain'} />
-          {activeLoans.length === 0 ? (
+          {loansLoading || loansError ? <p>Waiting for loan data.</p> : activeLoans.length === 0 ? (
             <EmptyState title="Nothing to repay" detail="Repayment becomes available when a loan is active." />
           ) : activeLoans.map((loan) => (
             <Panel key={loan.id} title={`Loan #${loan.id}`} description={`Outstanding principal: $${loan.principal} mUSDC`} chipType={isDemoMode ? 'simulated' : 'onchain'}>
-              <form className="dashboard-inline-form" onSubmit={(event) => handleRepaySubmit(event, loan.id)}>
-                <Field label="Repayment amount (mUSDC)"><input type="number" value={repayAmount} onChange={(event) => setRepayAmount(event.target.value)} /></Field>
+              <form className="dashboard-inline-form" onSubmit={(event) => handleRepaySubmit(event, loan.id, loan.principal)}>
+                <Field label="Full principal repayment (mUSDC)"><input value={loan.principal} readOnly /></Field>
                 <button className="dashboard-primary-button" type="submit" disabled={isProcessing}>{isProcessing ? 'Processing...' : 'Submit repayment'}</button>
               </form>
             </Panel>
