@@ -8,6 +8,9 @@ import { DemoModeProvider } from './context/DemoModeContext';
 import InvestorDashboard from './pages/InvestorDashboard';
 import BorrowerDashboard from './pages/BorrowerDashboard';
 import AdminPanel from './pages/AdminPanel';
+import DecisionCard from './components/DecisionCard';
+import RiskGlobe from './components/RiskGlobe';
+import BorderGlow from './components/ui/BorderGlow';
 import { API_BASE, fetchVault, fetchLoans, fetchEvents } from './api/client';
 
 const proofItems = [
@@ -16,6 +19,17 @@ const proofItems = [
   { label: 'Borrower data', value: 'Contoh untuk demo', state: 'SIMULATED' },
   { label: 'Collateral review', value: 'Referensi privat', state: 'VERIFIED OFFCHAIN' },
 ];
+
+const proofGlow = {
+  glowColor: '260 90 85',
+  backgroundColor: '#120F17',
+  borderRadius: 28,
+  glowRadius: 40,
+  glowIntensity: 0.85,
+  coneSpread: 25,
+  colors: ['#cbb7fb', '#a884e5', '#8caaf0'],
+  fillOpacity: 0.18,
+};
 
 const API_ENDPOINTS = {
   vault: `${API_BASE}/api/vault`,
@@ -354,43 +368,46 @@ export function App() {
     <div className="app-shell">
       <a className="skip-link" href="#main">Lewati ke konten</a>
 
+      <div className="topbar-wrapper">
+        <header className="topbar">
+          <a className="brand-link" href="#top" aria-label="HOUSD, kembali ke atas">
+            <Wordmark />
+          </a>
+          <nav
+            id="site-nav"
+            className={menuOpen ? 'nav-links is-open' : 'nav-links'}
+            aria-label="Navigasi utama"
+          >
+            <a href="#cara-kerja" onClick={() => setMenuOpen(false)}>Cara kerja</a>
+            <a href="#demo" onClick={() => setMenuOpen(false)}>Demo</a>
+            <a href="#transparansi" onClick={() => setMenuOpen(false)}>Transparansi</a>
+            <a href="#risiko" onClick={() => setMenuOpen(false)}>Risiko</a>
+          </nav>
+          <div className="topbar-actions">
+            <button
+              className="menu-button"
+              type="button"
+              aria-expanded={menuOpen}
+              aria-controls="site-nav"
+              onClick={() => setMenuOpen((value) => !value)}
+            >
+              <span>{menuOpen ? 'Tutup' : 'Menu'}</span>
+            </button>
+            <button className="cta-button" type="button" onClick={() => setDialogOpen(true)}>
+              Mulai demo
+            </button>
+          </div>
+        </header>
+      </div>
+
       <main id="main">
         <section className="hero" id="top" aria-labelledby="hero-title">
-          <div className="topbar-wrapper">
-            <header className="topbar">
-              <a className="brand-link" href="#top" aria-label="HOUSD, kembali ke atas">
-                <Wordmark />
-              </a>
-              <nav
-                id="site-nav"
-                className={menuOpen ? 'nav-links is-open' : 'nav-links'}
-                aria-label="Navigasi utama"
-              >
-                <a href="#cara-kerja" onClick={() => setMenuOpen(false)}>Cara kerja</a>
-                <a href="#demo" onClick={() => setMenuOpen(false)}>Demo</a>
-                <a href="#transparansi" onClick={() => setMenuOpen(false)}>Transparansi</a>
-                <a href="#risiko" onClick={() => setMenuOpen(false)}>Risiko</a>
-              </nav>
-              <div className="topbar-actions">
-                <button
-                  className="menu-button"
-                  type="button"
-                  aria-expanded={menuOpen}
-                  aria-controls="site-nav"
-                  onClick={() => setMenuOpen((value) => !value)}
-                >
-                  <span>{menuOpen ? 'Tutup' : 'Menu'}</span>
-                </button>
-                <button className="cta-button" type="button" onClick={() => setDialogOpen(true)}>
-                  Mulai demo
-                </button>
-              </div>
-            </header>
-          </div>
-
-          <div className="hero-eyebrow">
-            <span className="eyebrow-mark" />
-            <span>Live · Housing credit market · Indonesia</span>
+          <div className="hero-network">
+            <span>Built on</span>
+            <span className="hero-network-brand">
+              <img src="/brand/bnb-chain-symbol.svg" width="22" height="22" alt="" />
+              <strong>BNB Chain</strong>
+            </span>
           </div>
           <h1 id="hero-title" className="hero-title">
             Modal untuk rumah,<br />
@@ -440,15 +457,8 @@ export function App() {
           </header>
           <ul className="decision-list">
             {decisions.map((decision) => (
-              <li className="decision-row" key={decision.id}>
-                <span className={`decision-dot decision-dot--${decision.stateKey}`} aria-hidden="true" />
-                <div className="decision-body">
-                  <span className="decision-number">{decision.number}</span>
-                  <p className="decision-kicker">{decision.kicker}</p>
-                  <h3 className="decision-title">{decision.title}</h3>
-                  <p className="decision-copy">{decision.body}</p>
-                </div>
-                <span className={`state-chip state-chip--${decision.stateKey}`}>{decision.state}</span>
+              <li key={decision.id}>
+                <DecisionCard decision={decision} />
               </li>
             ))}
           </ul>
@@ -508,57 +518,45 @@ export function App() {
 
           {/* Live data dari backend → kontrak BNB testnet */}
           <div className="live-grid">
-            <LiveVaultPanel />
-            <div className="live-panel live-panel--loans">
-              <header className="live-panel-header">
-                <div>
-                  <span className="live-panel-label">Active Loans</span>
-                  <span className="live-panel-sublabel">Dari LoanManager onchain</span>
-                </div>
-              </header>
-              <LiveLoansPanel />
-            </div>
+            <BorderGlow {...proofGlow} className="proof-glow">
+              <LiveVaultPanel />
+            </BorderGlow>
+            <BorderGlow {...proofGlow} className="proof-glow">
+              <div className="live-panel live-panel--loans">
+                <header className="live-panel-header">
+                  <div>
+                    <span className="live-panel-label">Active Loans</span>
+                    <span className="live-panel-sublabel">Dari LoanManager onchain</span>
+                  </div>
+                </header>
+                <LiveLoansPanel />
+              </div>
+            </BorderGlow>
           </div>
 
-          {/* Ledger statis — menjelaskan sumber data per field */}
-          <div className="ledger" role="list">
-            <div className="ledger-head" aria-hidden="true">
-              <span>Field</span>
-              <span>Value</span>
-              <span>State</span>
+          {/* Sumber data per field, terpisah dari status fetch panel live. */}
+          <BorderGlow {...proofGlow} className="proof-glow proof-glow--ledger">
+            <div className="ledger" role="list">
+              <div className="ledger-head" aria-hidden="true">
+                <span>Field</span>
+                <span>Value</span>
+                <span>State</span>
+              </div>
+              {proofItems.map((item) => {
+                const stateKey = item.state.toLowerCase().replace(' ', '-');
+                return (
+                  <div className="ledger-row" key={item.label} role="listitem">
+                    <span className="ledger-label">{item.label}</span>
+                    <strong className="ledger-value">{item.value}</strong>
+                    <span className={`state-chip state-chip--${stateKey}`}>{item.state}</span>
+                  </div>
+                );
+              })}
             </div>
-            {proofItems.map((item) => {
-              const stateKey = item.state.toLowerCase().replace(' ', '-');
-              return (
-                <div className="ledger-row" key={item.label} role="listitem">
-                  <span className="ledger-label">{item.label}</span>
-                  <strong className="ledger-value">{item.value}</strong>
-                  <span className={`state-chip state-chip--${stateKey}`}>{item.state}</span>
-                </div>
-              );
-            })}
-          </div>
+          </BorderGlow>
         </section>
 
-        <section className="risk" id="risiko" aria-labelledby="risk-title">
-          <div className="risk-copy">
-            <p className="section-eyebrow">Batas yang terlihat</p>
-            <h2 id="risk-title" className="section-title">
-              Transparan bukan berarti tanpa risiko.
-            </h2>
-            <p className="risk-body">
-              HOUSD memperlihatkan LTV, konsentrasi, maturity, status loan, dan bukti transaksi.
-              Prototype tidak memverifikasi agunan nyata dan belum diaudit.
-            </p>
-            <a className="ghost-link" href="#top">
-              Kembali ke atas <span aria-hidden="true">↑</span>
-            </a>
-          </div>
-          <div className="risk-stamp" aria-hidden="true">
-            <span>NO YIELD</span>
-            <span>PROMISES</span>
-          </div>
-        </section>
+        <RiskGlobe />
       </main>
 
       <footer className="site-footer">
