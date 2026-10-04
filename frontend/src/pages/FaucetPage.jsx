@@ -7,8 +7,8 @@ import './faucet.css';
 
 const FAUCET_CHAIN_ID = 97;
 const tokens = [
-  { id: 'bnb', label: 'BNB testnet', kind: 'GAS TRANSAKSI', detail: 'Untuk membayar biaya transaksi saat mencoba fitur onchain.', amountKey: 'dripBnb', suffix: 'BNB' },
-  { id: 'usdc', label: 'mUSDC', kind: 'TOKEN UJI', detail: 'Untuk mencoba deposit ke Housing Credit Vault.', amountKey: 'dripUsdc', suffix: 'mUSDC' }
+  { id: 'bnb', label: 'BNB testnet', kind: 'TRANSACTION GAS', detail: 'Pay transaction fees when trying onchain features.', amountKey: 'dripBnb', suffix: 'BNB' },
+  { id: 'usdc', label: 'mUSDC', kind: 'TEST TOKEN', detail: 'Try depositing into the Housing Credit Vault.', amountKey: 'dripUsdc', suffix: 'mUSDC' }
 ];
 
 export function FaucetPage() {
@@ -45,7 +45,7 @@ export function FaucetPage() {
   const validAddress = isAddress(targetAddress);
   const wrongChain = isConnected && chainId !== FAUCET_CHAIN_ID;
   const canClaim = validAddress && infoState === 'ready' && !wrongChain && !claiming;
-  const serviceOffline = infoError.startsWith('Faucet belum terhubung');
+  const serviceOffline = infoError.startsWith('Cannot connect to the faucet');
 
   async function handleClaim(token) {
     if (!canClaim) return;
@@ -69,15 +69,15 @@ export function FaucetPage() {
 
   return (
     <div className="faucet-app">
-      <a className="skip-link" href="#faucet-main">Lewati ke konten</a>
+      <a className="skip-link" href="#faucet-main">Skip to content</a>
       <div className="topbar-wrapper">
         <header className="topbar faucet-topbar">
-          <Link to="/" className="brand-link" aria-label="HOUSD, kembali ke landing page"><span className="wordmark">HOUSD<span className="wordmark-dot">.</span></span></Link>
-          <nav className="faucet-nav" aria-label="Navigasi faucet">
-            <Link to="/">Beranda</Link>
+          <Link to="/" className="brand-link" aria-label="HOUSD, back to home"><span className="wordmark">HOUSD<span className="wordmark-dot">.</span></span></Link>
+          <nav className="faucet-nav" aria-label="Faucet navigation">
+            <Link to="/">Home</Link>
             <span aria-current="page">Faucet</span>
           </nav>
-          <Link to="/app/invest" className="cta-button">Buka dashboard</Link>
+          <Link to="/app/invest" className="cta-button">Open dashboard</Link>
         </header>
       </div>
 
@@ -87,9 +87,9 @@ export function FaucetPage() {
             <span>Built on</span>
             <span className="hero-network-brand"><img src="/brand/bnb-chain-symbol.svg" width="22" height="22" alt="" /><strong>BNB Chain Testnet</strong></span>
           </div>
-          <h1 id="faucet-title">Token uji untuk <span className="hero-highlight">memulai demo.</span></h1>
-          <p>Siapkan BNB untuk biaya transaksi dan mUSDC untuk mencoba deposit di vault HOUSD. Token ini hanya berlaku di testnet.</p>
-          <span className="faucet-intro__note">BNB CHAIN TESTNET <span aria-hidden="true">·</span> CHAIN ID 97 <span aria-hidden="true">·</span> TANPA NILAI UANG</span>
+          <h1 id="faucet-title">Test tokens to <span className="hero-highlight">start the demo.</span></h1>
+          <p>Get BNB for transaction fees and mUSDC to try depositing into the HOUSD vault. These tokens work only on testnet.</p>
+          <span className="faucet-intro__note">BNB CHAIN TESTNET <span aria-hidden="true">·</span> CHAIN ID 97 <span aria-hidden="true">·</span> NO MONETARY VALUE</span>
         </section>
 
         <div className="faucet-workspace">
@@ -100,11 +100,11 @@ export function FaucetPage() {
           </div>
           <div className="faucet-layout">
           <section className="faucet-address-panel" aria-labelledby="faucet-address-title">
-            <div className="faucet-panel-index">01 <span>/</span> ALAMAT TUJUAN</div>
-            <h2 id="faucet-address-title">Kirim ke wallet kamu.</h2>
-            <p>Hubungkan wallet atau masukkan alamat BNB Chain secara manual.</p>
+            <div className="faucet-panel-index">01 <span>/</span> RECIPIENT ADDRESS</div>
+            <h2 id="faucet-address-title">Send to your wallet.</h2>
+            <p>Connect your wallet or enter a BNB Chain address manually.</p>
 
-            <label className="faucet-address-label" htmlFor="faucet-address">Alamat wallet</label>
+            <label className="faucet-address-label" htmlFor="faucet-address">Wallet address</label>
             <input
               id="faucet-address"
               className="faucet-address-input"
@@ -118,11 +118,11 @@ export function FaucetPage() {
               aria-describedby="faucet-address-help"
             />
             <p id="faucet-address-help" className={targetAddress && !validAddress ? 'faucet-field-help is-error' : 'faucet-field-help'}>
-              {targetAddress && !validAddress ? 'Alamat belum valid. Periksa 42 karakter yang diawali 0x.' : 'Pastikan alamat ini milik wallet yang akan kamu pakai di dashboard.'}
+              {targetAddress && !validAddress ? 'Invalid address. Check that it has 42 characters and starts with 0x.' : 'Use the address of the wallet you plan to connect to the dashboard.'}
             </p>
 
             {isConnected ? (
-              <p className="faucet-wallet-state"><span aria-hidden="true" /> Wallet terhubung: {address.slice(0, 6)}…{address.slice(-4)}</p>
+              <p className="faucet-wallet-state"><span aria-hidden="true" /> Connected wallet: {address.slice(0, 6)}…{address.slice(-4)}</p>
             ) : (
               <button
                 type="button"
@@ -130,54 +130,54 @@ export function FaucetPage() {
                 onClick={() => connectors?.[0] && connect({ connector: connectors[0] })}
                 disabled={!connectors?.length || isConnecting}
               >
-                {isConnecting ? 'Menghubungkan…' : connectors?.length ? 'Hubungkan wallet' : 'Wallet browser tidak terdeteksi'}
+                {isConnecting ? 'Connecting…' : connectors?.length ? 'Connect wallet' : 'No browser wallet detected'}
               </button>
             )}
             {connectError && <p className="faucet-inline-error" role="alert">{connectError.shortMessage || connectError.message}</p>}
             {wrongChain && (
               <div className="faucet-network-warning" role="status">
-                <p>Wallet sedang di jaringan lain. Pindah ke BNB Chain Testnet sebelum klaim.</p>
+                <p>Your wallet is on a different network. Switch to BNB Chain Testnet before claiming.</p>
                 <button type="button" className="faucet-secondary-button" onClick={() => switchChain({ chainId: FAUCET_CHAIN_ID })} disabled={isSwitching}>
-                  {isSwitching ? 'Mengganti jaringan…' : 'Pindah ke testnet'}
+                  {isSwitching ? 'Switching networks…' : 'Switch to testnet'}
                 </button>
               </div>
             )}
             {switchError && <p className="faucet-inline-error" role="alert">{switchError.shortMessage || switchError.message}</p>}
 
             <div className="faucet-next-step">
-              <span>LANGKAH BERIKUTNYA</span>
-              <p>Setelah klaim, buka dashboard Investor dan pilih mode Live untuk mencoba deposit mUSDC.</p>
-              <Link to="/app/invest">Buka dashboard <span aria-hidden="true">↗</span></Link>
+              <span>NEXT STEP</span>
+              <p>After claiming, open the Investor dashboard and select Live mode to try depositing mUSDC.</p>
+              <Link to="/app/invest">Open dashboard <span aria-hidden="true">↗</span></Link>
             </div>
           </section>
 
           <section className="faucet-claim-panel" aria-labelledby="faucet-claim-title">
-            <div className="faucet-panel-index">02 <span>/</span> KLAIM TOKEN UJI</div>
+            <div className="faucet-panel-index">02 <span>/</span> CLAIM TEST TOKENS</div>
             <div className="faucet-claim-heading">
               <div>
-                <h2 id="faucet-claim-title">Pilih token uji.</h2>
-                <p>Masing-masing token dapat diklaim sekali per alamat setiap 1 jam.</p>
+                <h2 id="faucet-claim-title">Choose a test token.</h2>
+                <p>Each address can claim each token once per hour.</p>
               </div>
               <span className={`faucet-service-state is-${infoState}`} role="status">
-                <span aria-hidden="true" />{infoState === 'ready' ? 'Faucet siap' : infoState === 'loading' ? 'Memeriksa faucet' : 'Server belum aktif'}
+                <span aria-hidden="true" />{infoState === 'ready' ? 'Faucet ready' : infoState === 'loading' ? 'Checking faucet' : 'Server unavailable'}
               </span>
             </div>
 
             {infoState === 'error' && (
               <div className="faucet-service-error" role="alert">
                 <div>
-                  <strong>{serviceOffline ? 'Layanan lokal belum berjalan' : 'Faucet belum siap'}</strong>
+                  <strong>{serviceOffline ? 'Local service is not running' : 'Faucet is not ready'}</strong>
                   <p>{infoError}</p>
                   {serviceOffline && <details>
-                    <summary>Cara mengaktifkan faucet lokal</summary>
+                    <summary>How to start the local faucet</summary>
                     <ol>
-                      <li>Di <code>backend/faucet</code>, salin <code>.env.example</code> menjadi <code>.env</code>.</li>
-                      <li>Isi <code>FAUCET_PRIVATE_KEY</code> dengan wallet khusus testnet yang memiliki BNB untuk klaim dan gas mint.</li>
-                      <li>Jalankan <code>npm install</code>, lalu <code>npm start</code>.</li>
+                      <li>In <code>backend/faucet</code>, copy <code>.env.example</code> to <code>.env</code>.</li>
+                      <li>Set <code>FAUCET_PRIVATE_KEY</code> to the private key of a dedicated testnet wallet with enough BNB for claims and minting fees.</li>
+                      <li>Run <code>npm install</code>, then <code>npm start</code>.</li>
                     </ol>
                   </details>}
                 </div>
-                <button type="button" onClick={loadInfo}>Coba lagi</button>
+                <button type="button" onClick={loadInfo}>Try again</button>
               </div>
             )}
 
@@ -188,17 +188,17 @@ export function FaucetPage() {
                   <article className="faucet-token" key={token.id}>
                     <div className="faucet-token__symbol" aria-hidden="true">{token.id === 'bnb' ? <img src="/brand/bnb-chain-symbol.svg" width="26" height="26" alt="" /> : '$'}</div>
                     <div className="faucet-token__body">
-                      <div className="faucet-token__top"><span>{token.kind}</span><strong>{info ? `${info[token.amountKey]} ${token.suffix}` : 'Menunggu data'}</strong></div>
+                      <div className="faucet-token__top"><span>{token.kind}</span><strong>{info ? `${info[token.amountKey]} ${token.suffix}` : 'Waiting for data'}</strong></div>
                       <h3>{token.label}</h3>
                       <p>{token.detail}</p>
                     </div>
                     <button type="button" className="faucet-claim-button" disabled={!canClaim} onClick={() => handleClaim(token.id)}>
-                      {claiming === token.id ? 'Mengirim…' : `Klaim ${token.label}`}
+                      {claiming === token.id ? 'Sending…' : `Claim ${token.label}`}
                     </button>
                     {result && (
                       <div className={`faucet-result is-${result.type}`} role={result.type === 'error' ? 'alert' : 'status'}>
                         <p>{result.message}</p>
-                        {result.txHash && <a href={`https://testnet.bscscan.com/tx/${result.txHash}`} target="_blank" rel="noopener noreferrer">Lihat transaksi di BscScan</a>}
+                        {result.txHash && <a href={`https://testnet.bscscan.com/tx/${result.txHash}`} target="_blank" rel="noopener noreferrer">View transaction on BscScan</a>}
                       </div>
                     )}
                   </article>
@@ -208,7 +208,7 @@ export function FaucetPage() {
           </section>
           </div>
         </div>
-        <p className="faucet-footer-note">Faucet ini hanya untuk simulasi HOUSD di BNB Chain Testnet.</p>
+        <p className="faucet-footer-note">This faucet is only for the HOUSD simulation on BNB Chain Testnet.</p>
       </main>
     </div>
   );

@@ -78,7 +78,7 @@ export function Lens({ children, label, zoomFactor = 1.5, lensSize = 170, hoveri
       <button
         type="button"
         className="lens-control"
-        aria-label={`Perbesar ${label}`}
+        aria-label={`Magnify ${label}`}
         aria-pressed={pinned}
         onClick={() => {
           setPinned(!pinned);
@@ -88,7 +88,7 @@ export function Lens({ children, label, zoomFactor = 1.5, lensSize = 170, hoveri
         onBlur={() => { setPinned(false); updateHover(false); }}
         onKeyDown={handleKeyDown}
       >
-        <span className="sr-only">Tekan Enter untuk mengaktifkan lensa, tombol panah untuk menggeser, Escape untuk menutup.</span>
+        <span className="sr-only">Press Enter to activate the lens, arrow keys to move it, and Escape to close.</span>
       </button>
     </div>
   );

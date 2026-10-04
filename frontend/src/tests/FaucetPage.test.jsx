@@ -34,30 +34,30 @@ function renderPage() {
 describe('faucet page', () => {
   it('claims mUSDC to a manually entered address and shows the transaction', async () => {
     fetchFaucetInfo.mockResolvedValue(info);
-    claimFaucetToken.mockResolvedValue({ success: true, message: 'Berhasil mengirim 1000 MockUSDC!', txHash: '0xabc' });
+    claimFaucetToken.mockResolvedValue({ success: true, message: 'Successfully sent 1000 MockUSDC!', txHash: '0xabc' });
     const user = userEvent.setup();
     renderPage();
 
-    await screen.findByText('Faucet siap');
-    fireEvent.change(screen.getByLabelText('Alamat wallet'), { target: { value: target } });
-    await user.click(screen.getByRole('button', { name: 'Klaim mUSDC' }));
+    await screen.findByText('Faucet ready');
+    fireEvent.change(screen.getByLabelText('Wallet address'), { target: { value: target } });
+    await user.click(screen.getByRole('button', { name: 'Claim mUSDC' }));
 
     expect(claimFaucetToken).toHaveBeenCalledWith('usdc', target);
-    expect(await screen.findByText('Berhasil mengirim 1000 MockUSDC!')).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Lihat transaksi di BscScan' }).getAttribute('href')).toBe('https://testnet.bscscan.com/tx/0xabc');
+    expect(await screen.findByText('Successfully sent 1000 MockUSDC!')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'View transaction on BscScan' }).getAttribute('href')).toBe('https://testnet.bscscan.com/tx/0xabc');
   });
 
   it('keeps claims disabled while the service is unavailable and recovers on retry', async () => {
-    fetchFaucetInfo.mockRejectedValueOnce(new Error('Server faucet lokal belum terhubung.')).mockResolvedValue(info);
+    fetchFaucetInfo.mockRejectedValueOnce(new Error('The local faucet server is unavailable.')).mockResolvedValue(info);
     const user = userEvent.setup();
     renderPage();
 
-    expect(await screen.findByText('Server faucet lokal belum terhubung.')).toBeTruthy();
-    fireEvent.change(screen.getByLabelText('Alamat wallet'), { target: { value: target } });
-    expect(screen.getByRole('button', { name: 'Klaim BNB testnet' }).disabled).toBe(true);
-    await user.click(screen.getByRole('button', { name: 'Coba lagi' }));
-    await screen.findByText('Faucet siap');
-    expect(screen.getByRole('button', { name: 'Klaim BNB testnet' }).disabled).toBe(false);
+    expect(await screen.findByText('The local faucet server is unavailable.')).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Wallet address'), { target: { value: target } });
+    expect(screen.getByRole('button', { name: 'Claim BNB testnet' }).disabled).toBe(true);
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    await screen.findByText('Faucet ready');
+    expect(screen.getByRole('button', { name: 'Claim BNB testnet' }).disabled).toBe(false);
   });
 
   it('asks a connected wallet on another chain to switch before claiming', async () => {
@@ -65,21 +65,21 @@ describe('faucet page', () => {
     fetchFaucetInfo.mockResolvedValue(info);
     renderPage();
 
-    await screen.findByText('Faucet siap');
-    expect(screen.getByRole('button', { name: 'Pindah ke testnet' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Klaim mUSDC' }).disabled).toBe(true);
+    await screen.findByText('Faucet ready');
+    expect(screen.getByRole('button', { name: 'Switch to testnet' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Claim mUSDC' }).disabled).toBe(true);
   });
 
   it('shows the cooldown error returned after a claim attempt', async () => {
     fetchFaucetInfo.mockResolvedValue(info);
-    claimFaucetToken.mockRejectedValue(new Error('Tunggu 1 jam untuk klaim USDC lagi'));
+    claimFaucetToken.mockRejectedValue(new Error('Wait 1 hour before claiming USDC again'));
     const user = userEvent.setup();
     renderPage();
 
-    await screen.findByText('Faucet siap');
-    fireEvent.change(screen.getByLabelText('Alamat wallet'), { target: { value: target } });
-    await user.click(screen.getByRole('button', { name: 'Klaim mUSDC' }));
+    await screen.findByText('Faucet ready');
+    fireEvent.change(screen.getByLabelText('Wallet address'), { target: { value: target } });
+    await user.click(screen.getByRole('button', { name: 'Claim mUSDC' }));
 
-    expect(await screen.findByText('Tunggu 1 jam untuk klaim USDC lagi')).toBeTruthy();
+    expect(await screen.findByText('Wait 1 hour before claiming USDC again')).toBeTruthy();
   });
 });

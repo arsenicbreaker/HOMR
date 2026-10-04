@@ -6,7 +6,7 @@ afterEach(() => vi.unstubAllGlobals());
 describe('faucet API', () => {
   it('rejects an old server that cannot report the actual claim amounts', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ success: true }) }));
-    await expect(fetchFaucetInfo()).rejects.toThrow('Server faucet perlu diperbarui');
+    await expect(fetchFaucetInfo()).rejects.toThrow('The faucet server must be updated');
   });
 
   it('sends the selected wallet address to the mUSDC claim endpoint', async () => {

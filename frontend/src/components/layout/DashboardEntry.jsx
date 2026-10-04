@@ -3,9 +3,9 @@ import { useDemoMode } from '../../context/DemoModeContext';
 import { useProtocolQuery } from '../../hooks/useProtocol';
 
 const dashboardData = {
-  investor: { resource: 'vault', personal: true, title: 'investor', detail: 'Membaca posisi vault terbaru.' },
-  borrower: { resource: 'auction', personal: true, title: 'borrower', detail: 'Membaca fase lelang terbaru.' },
-  admin: { resource: 'auction', personal: true, title: 'admin', detail: 'Membaca status lelang terbaru.' }
+  investor: { resource: 'vault', personal: true, title: 'investor', detail: 'Loading the latest vault position.' },
+  borrower: { resource: 'auction', personal: true, title: 'borrower', detail: 'Loading the current auction phase.' },
+  admin: { resource: 'auction', personal: true, title: 'admin', detail: 'Loading the latest auction status.' }
 };
 
 export default function DashboardEntry({ role, children }) {
@@ -19,7 +19,7 @@ export default function DashboardEntry({ role, children }) {
     <main className="dashboard-entry" aria-busy="true">
       <div className="dashboard-entry__content" role="status" aria-live="polite">
         <span className="dashboard-entry__brand">HOUSD.</span>
-        <h1>Menyiapkan dashboard {title}</h1>
+        <h1>Preparing your {title} dashboard</h1>
         <p>{detail}</p>
         <div className="dashboard-entry__track" aria-hidden="true"><span /></div>
       </div>

@@ -40,10 +40,10 @@ describe('dashboard entry loading', () => {
   it('appears after choosing a dashboard and exits when the initial contract read settles', async () => {
     const user = userEvent.setup();
     const view = renderRoutes();
-    await user.click(screen.getAllByRole('button', { name: 'Mulai demo' })[0]);
+    await user.click(screen.getAllByRole('button', { name: 'Start demo' })[0]);
     await user.click(screen.getByRole('button', { name: /Borrower/ }));
 
-    expect(screen.getByRole('status').textContent).toContain('Menyiapkan dashboard borrower');
+    expect(screen.getByRole('status').textContent).toContain('Preparing your borrower dashboard');
     expect(screen.queryByRole('heading', { name: 'Borrower ready' })).toBeNull();
 
     readiness.pending = false;
@@ -58,7 +58,7 @@ describe('dashboard entry loading', () => {
       </DemoModeProvider>
     );
     expect(screen.getByRole('heading', { name: 'Borrower ready' })).toBeTruthy();
-    expect(screen.queryByText('Menyiapkan dashboard borrower')).toBeNull();
+    expect(screen.queryByText('Preparing your borrower dashboard')).toBeNull();
   });
 
   it('does not block an explicitly selected demo dashboard', () => {

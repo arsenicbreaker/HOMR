@@ -19,8 +19,8 @@ import { API_BASE, fetchVault, fetchLoans, fetchEvents } from './api/client';
 const proofItems = [
   { label: 'Vault', value: 'Housing Credit Vault', state: 'ONCHAIN' },
   { label: 'Network', value: 'BNB Chain Testnet', state: 'ONCHAIN' },
-  { label: 'Borrower data', value: 'Contoh untuk demo', state: 'SIMULATED' },
-  { label: 'Collateral review', value: 'Referensi privat', state: 'VERIFIED OFFCHAIN' },
+  { label: 'Borrower data', value: 'Demo example', state: 'SIMULATED' },
+  { label: 'Collateral review', value: 'Private reference', state: 'VERIFIED OFFCHAIN' },
 ];
 
 const proofGlow = {
@@ -45,9 +45,9 @@ const decisions = [
     id: 'eligibility',
     number: '01',
     kicker: 'Credit eligibility',
-    title: 'Review yang menjaga data sensitif tetap privat.',
+    title: 'Reviews that keep sensitive data private.',
     body:
-      'Credit manager memeriksa borrower, properti, valuasi, dan batas risiko. Hanya hasil keputusan dan referensi yang masuk ke alur publik.',
+      'A credit manager reviews the borrower, property, valuation, and risk limits. Only the decision and its references enter the public process.',
     state: 'VERIFIED OFFCHAIN',
     stateKey: 'offchain',
   },
@@ -55,9 +55,9 @@ const decisions = [
     id: 'allocation',
     number: '02',
     kicker: 'Capital allocation',
-    title: 'Lelang tertutup yang hasilnya bisa diaudit.',
+    title: 'Sealed-bid auctions with auditable results.',
     body:
-      'Borrower yang disetujui mengirim commitment, membuka bid, dan menerima alokasi deterministik sesuai likuiditas dan limit vault.',
+      'Approved borrowers submit commitments, reveal their bids, and receive allocations determined by fixed rules based on vault liquidity and limits.',
     state: 'ONCHAIN',
     stateKey: 'onchain',
   },
@@ -65,30 +65,30 @@ const decisions = [
 
 const journeys = {
   investor: {
-    eyebrow: 'Jalur investor',
-    title: 'Satu vault, alokasi yang bisa ditelusuri.',
-    copy: 'Deposit mock USDC, terima vault shares, lalu lihat bagaimana modal dialokasikan dan dikembalikan.',
-    steps: ['Deposit mock USDC', 'Terima vault shares', 'Pantau loan dan repayment'],
+    eyebrow: 'Investor journey',
+    title: 'One vault, traceable allocations.',
+    copy: 'Deposit mock USDC, receive vault shares, and track how capital is allocated and repaid.',
+    steps: ['Deposit mock USDC', 'Receive vault shares', 'Track loans and repayments'],
     shortcut: 'I',
   },
   borrower: {
-    eyebrow: 'Jalur borrower',
-    title: 'Bersaing untuk modal, tanpa membuka dokumen sensitif.',
-    copy: 'Borrower yang sudah lolos review mengikuti lelang tertutup. Smart contract memvalidasi reveal dan menentukan alokasi.',
-    steps: ['Dapatkan approval', 'Commit lalu reveal bid', 'Terima hasil alokasi'],
+    eyebrow: 'Borrower journey',
+    title: 'Compete for capital while keeping sensitive documents private.',
+    copy: 'Approved borrowers take part in sealed-bid auctions. The smart contract validates revealed bids and determines allocations.',
+    steps: ['Get approved', 'Commit and reveal your bid', 'Receive your allocation results'],
     shortcut: 'B',
   },
 };
 
 const proofStats = [
-  { id: 'eligibility', label: 'Eligibility', detail: 'review offchain' },
-  { id: 'allocation', label: 'Allocation', detail: 'auction onchain' },
+  { id: 'eligibility', label: 'Eligibility', detail: 'offchain review' },
+  { id: 'allocation', label: 'Allocation', detail: 'onchain auction' },
   { id: 'proof', label: 'Proof', detail: 'testnet events' },
 ];
 
 const shortcuts = [
-  { keys: ['J', 'K'], label: 'navigasi' },
-  { keys: ['Enter'], label: 'buka' },
+  { keys: ['J', 'K'], label: 'navigate' },
+  { keys: ['Enter'], label: 'open' },
   { keys: ['⌘', 'K'], label: 'command bar' },
 ];
 
@@ -165,15 +165,15 @@ function HeroAppPreview() {
             <div className="hero-app-rows">
               <div className="app-row">
                 <div className="app-row-info">
-                  <span className="app-row-title">Permohonan Kredit #0412, Cluster Residential BSD</span>
-                  <span className="app-row-sub">Evaluasi Offchain Selesai · Bid Sealed #0x82f...a1</span>
+                  <span className="app-row-title">Credit Application #0412, Cluster Residential BSD</span>
+                  <span className="app-row-sub">Offchain Review Complete · Sealed Bid #0x82f...a1</span>
                 </div>
                 <span className="state-chip state-chip--onchain">ALLOCATED ONCHAIN</span>
               </div>
               <div className="app-row">
                 <div className="app-row-info">
-                  <span className="app-row-title">Permohonan Kredit #0413, Modern Housing Bintaro</span>
-                  <span className="app-row-sub">Verifikasi Dokumen Agunan · Risk Limit Checked</span>
+                  <span className="app-row-title">Credit Application #0413, Modern Housing Bintaro</span>
+                  <span className="app-row-sub">Collateral Document Verification · Risk Limit Checked</span>
                 </div>
                 <span className="state-chip state-chip--offchain">VERIFIED OFFCHAIN</span>
               </div>
@@ -232,8 +232,8 @@ function LiveVaultPanel() {
           <span className="live-panel-sublabel">BNB Chain Testnet · read-only</span>
         </div>
         <span className={`state-chip state-chip--${status === 'ok' ? 'onchain' : status === 'error' ? 'simulated' : 'offchain'}`}>
-          {status === 'idle' && 'MEMUAT'}
-          {status === 'loading' && 'MEMUAT'}
+          {status === 'idle' && 'LOADING'}
+          {status === 'loading' && 'LOADING'}
           {status === 'ok' && 'LIVE ONCHAIN'}
           {status === 'error' && 'ERROR'}
         </span>
@@ -266,9 +266,9 @@ function LiveVaultPanel() {
 
       {status === 'error' && (
         <div className="live-panel-error">
-          <p>Gagal memuat dari backend: {errorMsg}</p>
+          <p>Could not load data from the server: {errorMsg}</p>
           <button type="button" className="live-panel-retry" onClick={load}>
-            Coba lagi
+            Try again
           </button>
         </div>
       )}
@@ -284,7 +284,7 @@ function LiveVaultPanel() {
             target="_blank"
             rel="noreferrer"
           >
-            Buka di BscScan →
+            View on BscScan →
           </a>
         </footer>
       )}
@@ -309,12 +309,12 @@ function LiveLoansPanel() {
       .catch(() => setStatus('error'));
   }, []);
 
-  if (status === 'loading') return <p className="live-empty">Memuat loans…</p>;
-  if (status === 'error') return <p className="live-empty live-empty--error">Gagal memuat loans.</p>;
+  if (status === 'loading') return <p className="live-empty">Loading loans…</p>;
+  if (status === 'error') return <p className="live-empty live-empty--error">Could not load loans.</p>;
   if (!loans || loans.length === 0) {
     return (
       <p className="live-empty">
-        Belum ada loan aktif. Loan akan muncul setelah auction difinalisasi.
+        No active loans yet. Loans will appear once an auction is finalized.
       </p>
     );
   }
@@ -370,22 +370,22 @@ export function App() {
 
   return (
     <div className="app-shell">
-      <a className="skip-link" href="#main">Lewati ke konten</a>
+      <a className="skip-link" href="#main">Skip to content</a>
 
       <div className="topbar-wrapper">
         <header className="topbar">
-          <a className="brand-link" href="#top" aria-label="HOUSD, kembali ke atas">
+          <a className="brand-link" href="#top" aria-label="HOUSD, back to top">
             <Wordmark />
           </a>
           <nav
             id="site-nav"
             className={menuOpen ? 'nav-links is-open' : 'nav-links'}
-            aria-label="Navigasi utama"
+            aria-label="Main navigation"
           >
-            <a href="#cara-kerja" onClick={() => setMenuOpen(false)}>Cara kerja</a>
+            <a href="#cara-kerja" onClick={() => setMenuOpen(false)}>How it works</a>
             <a href="#demo" onClick={() => setMenuOpen(false)}>Demo</a>
-            <a href="#transparansi" onClick={() => setMenuOpen(false)}>Transparansi</a>
-            <a href="#risiko" onClick={() => setMenuOpen(false)}>Risiko</a>
+            <a href="#transparansi" onClick={() => setMenuOpen(false)}>Transparency</a>
+            <a href="#risiko" onClick={() => setMenuOpen(false)}>Risks</a>
             <Link to="/faucet" onClick={() => setMenuOpen(false)}>Faucet</Link>
           </nav>
           <div className="topbar-actions">
@@ -396,10 +396,10 @@ export function App() {
               aria-controls="site-nav"
               onClick={() => setMenuOpen((value) => !value)}
             >
-              <span>{menuOpen ? 'Tutup' : 'Menu'}</span>
+              <span>{menuOpen ? 'Close' : 'Menu'}</span>
             </button>
             <button className="cta-button" type="button" onClick={() => setDialogOpen(true)}>
-              Mulai demo
+              Start demo
             </button>
           </div>
         </header>
@@ -415,28 +415,30 @@ export function App() {
             </span>
           </div>
           <h1 id="hero-title" className="hero-title">
-            Modal untuk rumah,<br />
-            dialokasikan <span className="hero-highlight">terbuka.</span>
+            Capital for housing,<br />
+            allocated <span className="hero-highlight">openly.</span>
           </h1>
           <p className="hero-copy">
-            HOUSD menyatukan investor stablecoin dan borrower properti yang telah lolos review
-            melalui vault sederhana dan lelang yang dapat diverifikasi.
+            HOUSD connects stablecoin investors with vetted property borrowers
+            through a simple vault and verifiable auctions.
           </p>
           <div className="hero-actions">
             <button className="cta-button cta-button--primary" type="button" onClick={() => setDialogOpen(true)}>
-              Mulai demo
+              Start demo
               <span aria-hidden="true" className="cta-arrow">›</span>
             </button>
             <a className="ghost-link" href="#cara-kerja">
-              Lihat mekanismenya
-              <span aria-hidden="true">↓</span>
+              See how it works
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+                <path d="M12 5v14m-6-6 6 6 6-6" />
+              </svg>
             </a>
           </div>
-          <p className="hero-disclosure">Simulasi hackathon. Bukan produk investasi atau janji imbal hasil.</p>
+          <p className="hero-disclosure">Hackathon simulation. Not an investment product or a promise of returns.</p>
 
           <HeroAppPreview />
 
-          <div className="proof-strip" aria-label="Ringkasan status demo">
+          <div className="proof-strip" aria-label="Demo status summary">
             {proofStats.map((stat) => (
               <div className="proof-stat" key={stat.id}>
                 <span className="proof-stat-label">{stat.label}</span>
@@ -445,7 +447,7 @@ export function App() {
             ))}
           </div>
 
-          <div className="shortcut-strip" aria-label="Pintasan keyboard">
+          <div className="shortcut-strip" aria-label="Keyboard shortcuts">
             {shortcuts.map((shortcut) => (
               <ShortcutRow key={shortcut.label} {...shortcut} />
             ))}
@@ -454,10 +456,10 @@ export function App() {
 
         <section className="decisions" id="cara-kerja" aria-labelledby="decision-title">
           <header className="section-header">
-            <p className="section-eyebrow">Dua keputusan, dua lapisan</p>
+            <p className="section-eyebrow">Two decisions, two layers</p>
             <h2 id="decision-title" className="section-title">
-              Kredit dinilai manusia.<br />
-              Modal dialokasikan kontrak.
+              People assess credit.<br />
+              Contracts allocate capital.
             </h2>
           </header>
           <ul className="decision-list">
@@ -470,7 +472,7 @@ export function App() {
         </section>
 
         <section className="demo" id="demo" aria-labelledby="demo-title">
-          <div className="demo-tabs" role="tablist" aria-label="Pilih perjalanan demo">
+          <div className="demo-tabs" role="tablist" aria-label="Choose a demo journey">
             {Object.keys(journeys).map((key) => (
               <button
                 key={key}
@@ -484,7 +486,7 @@ export function App() {
                   {key === 'investor' ? 'Investor' : 'Borrower'}
                 </span>
                 <span className="demo-tab-shortcut">
-                  Tekan <Kbd>{journeys[key].shortcut}</Kbd>
+                  Press <Kbd>{journeys[key].shortcut}</Kbd>
                 </span>
               </button>
             ))}
@@ -508,16 +510,16 @@ export function App() {
             </ol>
             <div className="demo-notice">
               <span className="state-chip state-chip--simulated">SIMULATED DEMO</span>
-              <p>Alur dapat dijalankan tanpa wallet atau dana nyata. Transaksi onchain akan ditandai terpisah.</p>
+              <p>Try the demo without a wallet or real funds. Onchain transactions are labeled separately.</p>
             </div>
           </div>
         </section>
 
         <section className="transparency" id="transparansi" aria-labelledby="transparency-title">
           <header className="section-header">
-            <p className="section-eyebrow">Bukti sebelum klaim</p>
+            <p className="section-eyebrow">Evidence before claims</p>
             <h2 id="transparency-title" className="section-title">
-              Selalu tahu apa yang nyata, privat, atau simulasi.
+              Know what is real, private, or simulated.
             </h2>
           </header>
 
@@ -531,7 +533,7 @@ export function App() {
                 <header className="live-panel-header">
                   <div>
                     <span className="live-panel-label">Active Loans</span>
-                    <span className="live-panel-sublabel">Dari LoanManager onchain</span>
+                    <span className="live-panel-sublabel">From the onchain LoanManager</span>
                   </div>
                 </header>
                 <LiveLoansPanel />
@@ -598,14 +600,14 @@ export function App() {
               <button
                 className="dialog-close"
                 type="button"
-                aria-label="Tutup pilihan demo"
+                aria-label="Close demo selection"
                 onClick={() => setDialogOpen(false)}
               >
                 <span aria-hidden="true">×</span>
               </button>
             </div>
             <h2 id="dialog-title" className="dialog-title">
-              Kamu mau melihat HOUSD dari sisi mana?
+              How would you like to experience HOUSD?
             </h2>
             <div className="dialog-options">
               <button
@@ -614,7 +616,7 @@ export function App() {
                 onClick={() => chooseJourney('investor')}
               >
                 <span className="dialog-option-label">Investor</span>
-                <span className="dialog-option-detail">Deposit dan pantau vault</span>
+                <span className="dialog-option-detail">Deposit and monitor the vault</span>
                 <span className="dialog-option-arrow" aria-hidden="true">›</span>
               </button>
 
@@ -624,7 +626,7 @@ export function App() {
                 onClick={() => chooseJourney('borrower')}
               >
                 <span className="dialog-option-label">Borrower</span>
-                <span className="dialog-option-detail">Commit dan reveal bid</span>
+                <span className="dialog-option-detail">Commit and reveal your bid</span>
                 <span className="dialog-option-arrow" aria-hidden="true">›</span>
               </button>
 
@@ -634,14 +636,14 @@ export function App() {
                 onClick={() => chooseJourney('admin')}
               >
                 <span className="dialog-option-label">Credit Manager / Admin</span>
-                <span className="dialog-option-detail">Underwrite & kelola lelang</span>
+                <span className="dialog-option-detail">Underwrite & manage auctions</span>
                 <span className="dialog-option-arrow" aria-hidden="true">›</span>
               </button>
             </div>
             <p className="dialog-fineprint">
-              Tidak perlu wallet. Semua nilai di halaman demo diberi label sesuai sumbernya.
+              No wallet needed. All values on the demo page are labeled by source.
               <span className="dialog-hint">
-                Tekan <Kbd>ESC</Kbd> untuk tutup.
+                Press <Kbd>ESC</Kbd> to close.
               </span>
             </p>
           </motion.div>

@@ -5,12 +5,12 @@ async function faucetRequest(path, options) {
   try {
     response = await fetch(`${FAUCET_API_BASE}${path}`, options);
   } catch {
-    throw new Error(`Faucet belum terhubung di ${FAUCET_API_BASE}. Periksa layanan faucet.`);
+    throw new Error(`Cannot connect to the faucet at ${FAUCET_API_BASE}. Check that the faucet service is running.`);
   }
 
   const data = await response.json().catch(() => null);
   if (!response.ok || !data?.success) {
-    throw new Error(data?.error || `Permintaan faucet gagal (HTTP ${response.status}).`);
+    throw new Error(data?.error || `Faucet request failed (HTTP ${response.status}).`);
   }
   return data;
 }
@@ -18,13 +18,13 @@ async function faucetRequest(path, options) {
 export async function fetchFaucetInfo() {
   const info = await faucetRequest('/api/info');
   if (typeof info.dripBnb !== 'string' || typeof info.dripUsdc !== 'string') {
-    throw new Error('Server faucet perlu diperbarui sebelum klaim bisa digunakan.');
+    throw new Error('The faucet server must be updated before tokens can be claimed.');
   }
   return info;
 }
 
 export function claimFaucetToken(token, address) {
-  if (token !== 'bnb' && token !== 'usdc') throw new Error('Token faucet tidak dikenal.');
+  if (token !== 'bnb' && token !== 'usdc') throw new Error('Unknown faucet token.');
   return faucetRequest(`/api/claim-${token}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

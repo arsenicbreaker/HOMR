@@ -21,8 +21,8 @@ describe('HOMR landing page interactions', () => {
     const user = userEvent.setup();
     render(<MemoryRouter><App /></MemoryRouter>);
 
-    // The topbar and hero both expose a "Mulai demo" button — pick the topbar one.
-    const ctaButtons = screen.getAllByRole('button', { name: 'Mulai demo' });
+    // The topbar and hero both expose a "Start demo" button; pick the topbar one.
+    const ctaButtons = screen.getAllByRole('button', { name: 'Start demo' });
     await user.click(ctaButtons[0]);
     expect(screen.getByRole('dialog')).toBeTruthy();
 
@@ -34,11 +34,11 @@ describe('HOMR landing page interactions', () => {
     const user = userEvent.setup();
     render(<MemoryRouter><App /></MemoryRouter>);
 
-    await user.click(screen.getAllByRole('button', { name: 'Mulai demo' })[0]);
+    await user.click(screen.getAllByRole('button', { name: 'Start demo' })[0]);
     await user.click(screen.getByRole('button', { name: /Borrower/ }));
 
-    expect(screen.getByText('Dapatkan approval')).toBeTruthy();
-    expect(screen.getByText('Commit lalu reveal bid')).toBeTruthy();
+    expect(screen.getByText('Get approved')).toBeTruthy();
+    expect(within(screen.getByRole('region', { name: 'Compete for capital while keeping sensitive documents private.' })).getByText('Commit and reveal your bid')).toBeTruthy();
     expect(window.HTMLElement.prototype.scrollIntoView).toHaveBeenCalled();
   });
 
@@ -46,14 +46,14 @@ describe('HOMR landing page interactions', () => {
     const user = userEvent.setup();
     render(<MemoryRouter><App /></MemoryRouter>);
 
-    const tablist = screen.getByRole('tablist', { name: 'Pilih perjalanan demo' });
+    const tablist = screen.getByRole('tablist', { name: 'Choose a demo journey' });
     const borrowerTab = within(tablist).getByRole('tab', { name: /Borrower/ });
     await user.click(borrowerTab);
     expect(borrowerTab.getAttribute('aria-selected')).toBe('true');
 
     await user.click(screen.getByRole('button', { name: 'Menu' }));
-    expect(screen.getByRole('button', { name: 'Tutup' }).getAttribute('aria-expanded')).toBe('true');
-    await user.click(screen.getByRole('link', { name: 'Risiko' }));
+    expect(screen.getByRole('button', { name: 'Close' }).getAttribute('aria-expanded')).toBe('true');
+    await user.click(screen.getByRole('link', { name: 'Risks' }));
     expect(screen.getByRole('button', { name: 'Menu' }).getAttribute('aria-expanded')).toBe('false');
   });
 });

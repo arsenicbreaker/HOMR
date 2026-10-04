@@ -6,27 +6,27 @@ function DecisionPreview({ allocation }) {
     <div className={`decision-preview ${allocation ? 'decision-preview--allocation' : ''}`}>
       <div className="decision-preview-heading">
         <span>{allocation ? 'Housing Credit Vault' : 'Credit review'}</span>
-        <span className="decision-preview-caption">Ilustrasi alur</span>
+        <span className="decision-preview-caption">Process overview</span>
       </div>
       {allocation ? (
         <div className="allocation-flow">
-          <div className="allocation-vault">Likuiditas vault</div>
+          <div className="allocation-vault">Vault liquidity</div>
           <div className="allocation-stages">
-            <span>Commit</span><span>Reveal</span><span>Alokasi</span>
+            <span>Commit</span><span>Reveal</span><span>Allocation</span>
           </div>
-          <p>Hasil & referensi transaksi</p>
+          <p>Results & transaction references</p>
         </div>
       ) : (
         <div className="review-flow">
-          {['Borrower & dokumen', 'Properti & valuasi', 'Batas risiko'].map((item) => (
+          {['Borrower & documents', 'Property & valuation', 'Risk limits'].map((item) => (
             <div className="review-flow-row" key={item}>
-              <span>{item}</span><span>Review privat</span>
+              <span>{item}</span><span>Private review</span>
             </div>
           ))}
-          <div className="review-flow-result"><span>Hasil keputusan</span><span>Referensi publik</span></div>
+          <div className="review-flow-result"><span>Decision</span><span>Public reference</span></div>
         </div>
       )}
-      <span className="decision-preview-hint">Arahkan kursor atau ketuk untuk memperbesar</span>
+      <span className="decision-preview-hint">Hover or tap to magnify</span>
     </div>
   );
 }

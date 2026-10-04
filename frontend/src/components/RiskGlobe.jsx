@@ -35,15 +35,15 @@ export default function RiskGlobe() {
     <section ref={section} className="risk-globe-section" id="risiko" aria-labelledby="risk-title">
       <div className="risk-globe-panel">
         <div className="risk-globe-copy">
-          <p className="section-eyebrow">Batas yang terlihat</p>
-          <h2 id="risk-title">Transparan bukan berarti tanpa risiko.</h2>
+          <p className="section-eyebrow">Visible limits</p>
+          <h2 id="risk-title">Transparency does not eliminate risk.</h2>
           <p className="risk-globe-body">
-            HOUSD memperlihatkan LTV, konsentrasi, maturity, status loan, dan bukti transaksi.
-            Prototype tidak memverifikasi agunan nyata dan belum diaudit.
+            HOUSD shows LTV, concentration, maturity, loan status, and transaction records.
+            This prototype does not verify real collateral and has not been audited.
           </p>
           <div className="risk-globe-actions">
-            <a className="risk-globe-primary" href="#transparansi">Lihat bukti transaksi</a>
-            <a className="risk-globe-secondary" href="#top">Kembali ke atas</a>
+            <a className="risk-globe-primary" href="#transparansi">View transaction records</a>
+            <a className="risk-globe-secondary" href="#top">Back to top</a>
           </div>
         </div>
         <div className="risk-globe-visual" aria-hidden="true">
@@ -65,7 +65,7 @@ export default function RiskGlobe() {
             aria-pressed={paused}
             onClick={() => setPaused(!paused)}
           >
-            {paused ? 'Lanjutkan rotasi' : 'Jeda rotasi'}
+            {paused ? 'Resume rotation' : 'Pause rotation'}
           </button>
         )}
       </div>
