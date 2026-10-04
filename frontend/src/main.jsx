@@ -14,6 +14,7 @@ import DashboardEntry from './components/layout/DashboardEntry';
 import DecisionCard from './components/DecisionCard';
 import RiskGlobe from './components/RiskGlobe';
 import BorderGlow from './components/ui/BorderGlow';
+import { StickyScroll } from './components/ui/sticky-scroll-reveal';
 import { API_BASE, fetchVault, fetchLoans, fetchEvents } from './api/client';
 
 const proofItems = [
@@ -69,14 +70,12 @@ const journeys = {
     title: 'One vault, traceable allocations.',
     copy: 'Deposit mock USDC, receive vault shares, and track how capital is allocated and repaid.',
     steps: ['Deposit mock USDC', 'Receive vault shares', 'Track loans and repayments'],
-    shortcut: 'I',
   },
   borrower: {
     eyebrow: 'Borrower journey',
     title: 'Compete for capital while keeping sensitive documents private.',
     copy: 'Approved borrowers take part in sealed-bid auctions. The smart contract validates revealed bids and determines allocations.',
     steps: ['Get approved', 'Commit and reveal your bid', 'Receive your allocation results'],
-    shortcut: 'B',
   },
 };
 
@@ -374,6 +373,18 @@ export function App() {
 
       <div className="topbar-wrapper">
         <header className="topbar">
+          <button
+            className="menu-button"
+            type="button"
+            aria-label={menuOpen ? 'Close' : 'Menu'}
+            aria-expanded={menuOpen}
+            aria-controls="site-nav"
+            onClick={() => setMenuOpen((value) => !value)}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden="true" focusable="false">
+              <path d={menuOpen ? 'M6 6l12 12M6 18L18 6' : 'M4 6h16M4 12h16M4 18h16'} />
+            </svg>
+          </button>
           <a className="brand-link" href="#top" aria-label="HOUSD, back to top">
             <Wordmark />
           </a>
@@ -389,15 +400,6 @@ export function App() {
             <Link to="/faucet" onClick={() => setMenuOpen(false)}>Faucet</Link>
           </nav>
           <div className="topbar-actions">
-            <button
-              className="menu-button"
-              type="button"
-              aria-expanded={menuOpen}
-              aria-controls="site-nav"
-              onClick={() => setMenuOpen((value) => !value)}
-            >
-              <span>{menuOpen ? 'Close' : 'Menu'}</span>
-            </button>
             <button className="cta-button" type="button" onClick={() => setDialogOpen(true)}>
               Start demo
             </button>
@@ -471,48 +473,35 @@ export function App() {
           </ul>
         </section>
 
-        <section className="demo" id="demo" aria-labelledby="demo-title">
-          <div className="demo-tabs" role="tablist" aria-label="Choose a demo journey">
-            {Object.keys(journeys).map((key) => (
-              <button
-                key={key}
-                role="tab"
-                aria-selected={journey === key}
-                className={journey === key ? 'demo-tab is-active' : 'demo-tab'}
-                onClick={() => setJourney(key)}
-                type="button"
-              >
-                <span className="demo-tab-label">
-                  {key === 'investor' ? 'Investor' : 'Borrower'}
-                </span>
-                <span className="demo-tab-shortcut">
-                  Press <Kbd>{journeys[key].shortcut}</Kbd>
-                </span>
-              </button>
-            ))}
-          </div>
-          <div key={journey} className="demo-panel">
-            <p className="section-eyebrow">{activeJourney.eyebrow}</p>
-            <h2 id="demo-title" className="section-title section-title--md">
-              {activeJourney.title}
-            </h2>
-            <p className="demo-copy">{activeJourney.copy}</p>
-            <ol className="journey-steps">
-              {activeJourney.steps.map((step, index) => (
-                <li className="journey-step" key={step}>
-                  <span className="journey-step-number">
-                    0{index + 1}
-                  </span>
-                  <span className="journey-step-label">{step}</span>
-                  <span className="journey-step-meta" aria-hidden="true">›</span>
-                </li>
-              ))}
-            </ol>
-            <div className="demo-notice">
-              <span className="state-chip state-chip--simulated">SIMULATED DEMO</span>
-              <p>Try the demo without a wallet or real funds. Onchain transactions are labeled separately.</p>
-            </div>
-          </div>
+        <section className="demo" id="demo" aria-label={activeJourney.title}>
+          <StickyScroll
+            activeId={journey}
+            onActiveChange={setJourney}
+            content={Object.entries(journeys).map(([id, item]) => ({
+              id,
+              title: id === 'investor' ? 'Investor' : 'Borrower',
+              description: item.copy,
+              content: (
+                <>
+                  <p className="section-eyebrow">{item.eyebrow}</p>
+                  <h3 className="section-title section-title--md">{item.title}</h3>
+                  <ol className="journey-steps">
+                    {item.steps.map((step, index) => (
+                      <li className="journey-step" key={step}>
+                        <span className="journey-step-number">0{index + 1}</span>
+                        <span className="journey-step-label">{step}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </>
+              ),
+            }))}
+          >
+            <p className="sticky-scroll-notice">
+              <strong>Simulated demo</strong>
+              <span>Try the demo without a wallet or real funds. Onchain transactions are labeled separately.</span>
+            </p>
+          </StickyScroll>
         </section>
 
         <section className="transparency" id="transparansi" aria-labelledby="transparency-title">
