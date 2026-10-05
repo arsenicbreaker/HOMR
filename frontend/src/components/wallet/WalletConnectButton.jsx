@@ -1,27 +1,19 @@
 import React from 'react';
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
-import { useDemoMode } from '../../context/DemoModeContext';
-import DemoTag from '../ui/DemoTag';
+import { useAccount, useConnect, useDisconnect, useSwitchChain } from 'wagmi';
+import { useTransactionState } from '../../context/TransactionContext';
+import { CHAIN_CONFIG } from '../../contracts/addresses';
 
 export function WalletConnectButton() {
-  const { isDemoMode, toggleDemoMode } = useDemoMode();
-  const { address, isConnected } = useAccount();
-  const { connect, connectors } = useConnect();
+  const { isTransacting } = useTransactionState();
+  const { address, isConnected, chainId } = useAccount();
+  const { connect, connectors, error, isPending } = useConnect();
+  const { switchChain, error: switchError } = useSwitchChain();
   const { disconnect } = useDisconnect();
 
   return (
     <div className="wallet-controls">
-      <button
-        onClick={toggleDemoMode}
-        className={`wallet-mode${isDemoMode ? ' is-active' : ''}`}
-      >
-        <span className="wallet-control__dot" />
-        <span className="wallet-mode__label">{isDemoMode ? 'Demo active' : 'Enable demo'}</span>
-        {isDemoMode && <DemoTag text="MOCKED" />}
-      </button>
-
       {isConnected ? (
-        <button onClick={() => disconnect()} className="wallet-account">
+        <button onClick={() => disconnect()} disabled={isTransacting} className="wallet-account">
           <span className="wallet-control__dot wallet-control__dot--connected" />
           <span>{`${address.slice(0, 6)}...${address.slice(-4)}`}</span>
         </button>
@@ -31,14 +23,17 @@ export function WalletConnectButton() {
             if (connectors && connectors.length > 0) {
               connect({ connector: connectors[0] });
             } else {
-              alert('No Web3 wallet extension found. Use Demo Mode or install MetaMask / BNB Wallet.');
+              alert('No Web3 wallet extension found. Install MetaMask or BNB Wallet to connect.');
             }
           }}
           className="wallet-account"
+          disabled={isPending}
         >
-          Connect Wallet
+          {isPending ? 'Connecting...' : 'Connect Wallet'}
         </button>
       )}
+      {isConnected && chainId !== CHAIN_CONFIG.chainId && <button type="button" className="wallet-account" onClick={() => switchChain({ chainId: CHAIN_CONFIG.chainId })}>Switch to {CHAIN_CONFIG.chainName}</button>}
+      {(error || switchError) && <span role="alert">{(error || switchError).shortMessage || (error || switchError).message}</span>}
     </div>
   );
 }

@@ -7,13 +7,14 @@ dotenv.config();
 
 const app = express();
 
-// 1. Konfigurasi CORS (Hanya izinkan frontend HOMR)
-const allowedOrigins = ['http://localhost:3000', 'http://localhost:5173'];
+// Local Vite ports may change; deployed origins must be listed explicitly.
+const allowedOrigins = (process.env.FAUCET_ALLOWED_ORIGINS || '').split(',').map((origin) => origin.trim()).filter(Boolean);
+const isLocalOrigin = (origin) => /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
 app.use(cors({
     origin: function (origin, callback) {
-        if (!origin) return callback(null, true); // Izinkan Postman/cURL
-        if (allowedOrigins.indexOf(origin) === -1) {
-            return callback(new Error('CORS policy tidak mengizinkan origin ini.'), false);
+        if (!origin) return callback(null, true);
+        if (!isLocalOrigin(origin) && !allowedOrigins.includes(origin)) {
+            return callback(new Error('This origin is not allowed by the CORS policy.'), false);
         }
         return callback(null, true);
     },
@@ -25,16 +26,33 @@ app.use(express.json());
 const provider = new ethers.JsonRpcProvider(process.env.BSC_RPC_URL);
 const wallet = new ethers.Wallet(process.env.FAUCET_PRIVATE_KEY, provider);
 
-// 3. Setup Kontrak MockUSDC (Minimal ABI - Anti Error!)
+// MockUSDC reads and mint operation.
 const MOCK_USDC_ABI = [
     "function balanceOf(address owner) view returns (uint256)",
+    "function decimals() view returns (uint8)",
     "function mint(address to, uint256 amount) external"
 ];
 const usdcContract = new ethers.Contract(process.env.MOCK_USDC_ADDRESS, MOCK_USDC_ABI, wallet);
 
 // Konfigurasi Jumlah Drip
-const DRIP_BNB = ethers.parseEther(process.env.DRIP_AMOUNT_BNB || "0.1");
-const DRIP_USDC = ethers.parseUnits(process.env.DRIP_AMOUNT_USDC || "1000", 6); // Asumsi 6 desimal
+const DRIP_BNB_AMOUNT = process.env.DRIP_AMOUNT_BNB || '0.1';
+const DRIP_USDC_AMOUNT = process.env.DRIP_AMOUNT_USDC || '1000';
+const DRIP_BNB = ethers.parseEther(DRIP_BNB_AMOUNT);
+let decimalsRequest;
+function getTokenDecimals() {
+    if (!decimalsRequest) {
+        decimalsRequest = usdcContract.decimals().then(Number).catch((error) => {
+            decimalsRequest = undefined;
+            throw error;
+        });
+    }
+    return decimalsRequest;
+}
+
+async function ensureTestnet() {
+    const network = await provider.getNetwork();
+    if (network.chainId !== 97n) throw new Error('Faucet RPC must use BNB Chain Testnet (97).');
+}
 
 // Rate Limiting (In-Memory)
 const claimHistory = new Map();
@@ -50,19 +68,24 @@ function isValidAddress(address) {
 // ==========================================
 app.get('/api/info', async (req, res) => {
     try {
+        await ensureTestnet();
         const bnbBalance = await provider.getBalance(wallet.address);
         const usdcBalance = await usdcContract.balanceOf(wallet.address);
+        const tokenDecimals = await getTokenDecimals();
         
         res.json({
             success: true,
             wallet: wallet.address,
             bnbBalance: ethers.formatEther(bnbBalance),
-            usdcBalance: ethers.formatUnits(usdcBalance, 6),
+            usdcBalance: ethers.formatUnits(usdcBalance, tokenDecimals),
+            dripBnb: DRIP_BNB_AMOUNT,
+            dripUsdc: DRIP_USDC_AMOUNT,
+            cooldownSeconds: COOLDOWN_MS / 1000,
             network: "BNB Smart Chain Testnet (Chain ID: 97)"
         });
     } catch (error) {
         console.error("Info Error:", error);
-        res.status(500).json({ success: false, error: "Gagal mengambil data" });
+        res.status(500).json({ success: false, error: "Could not retrieve faucet data" });
     }
 });
 
@@ -71,8 +94,9 @@ app.get('/api/info', async (req, res) => {
 // ==========================================
 app.post('/api/claim-bnb', async (req, res) => {
     try {
+        await ensureTestnet();
         const { address } = req.body;
-        if (!address || !isValidAddress(address)) return res.status(400).json({ success: false, error: "Alamat tidak valid" });
+        if (!address || !isValidAddress(address)) return res.status(400).json({ success: false, error: "Invalid address" });
         
         const targetAddr = ethers.getAddress(address);
         const historyKey = targetAddr.toLowerCase() + '_bnb';
@@ -80,12 +104,12 @@ app.post('/api/claim-bnb', async (req, res) => {
         // Cek Rate Limit
         const lastClaim = claimHistory.get(historyKey);
         if (lastClaim && (Date.now() - lastClaim < COOLDOWN_MS)) {
-            return res.status(429).json({ success: false, error: "Tunggu 1 jam untuk klaim BNB lagi" });
+            return res.status(429).json({ success: false, error: "Wait 1 hour before claiming BNB again" });
         }
 
         // Cek Saldo
         const balance = await provider.getBalance(wallet.address);
-        if (balance < DRIP_BNB) return res.status(503).json({ success: false, error: "Saldo BNB faucet habis!" });
+        if (balance < DRIP_BNB) return res.status(503).json({ success: false, error: "The faucet has run out of BNB!" });
 
         // Kirim BNB
         const tx = await wallet.sendTransaction({ to: targetAddr, value: DRIP_BNB });
@@ -95,13 +119,13 @@ app.post('/api/claim-bnb', async (req, res) => {
 
         res.json({
             success: true,
-            message: `Berhasil mengirim ${ethers.formatEther(DRIP_BNB)} BNB!`,
+            message: `Successfully sent ${ethers.formatEther(DRIP_BNB)} BNB!`,
             txHash: tx.hash,
             explorer: `https://testnet.bscscan.com/tx/${tx.hash}`
         });
     } catch (error) {
         console.error("BNB Error:", error);
-        res.status(500).json({ success: false, error: "Transaksi BNB gagal" });
+        res.status(500).json({ success: false, error: "BNB transaction failed" });
     }
 });
 
@@ -110,8 +134,9 @@ app.post('/api/claim-bnb', async (req, res) => {
 // ==========================================
 app.post('/api/claim-usdc', async (req, res) => {
     try {
+        await ensureTestnet();
         const { address } = req.body;
-        if (!address || !isValidAddress(address)) return res.status(400).json({ success: false, error: "Alamat tidak valid" });
+        if (!address || !isValidAddress(address)) return res.status(400).json({ success: false, error: "Invalid address" });
         
         const targetAddr = ethers.getAddress(address);
         const historyKey = targetAddr.toLowerCase() + '_usdc';
@@ -119,29 +144,27 @@ app.post('/api/claim-usdc', async (req, res) => {
         // Cek Rate Limit
         const lastClaim = claimHistory.get(historyKey);
         if (lastClaim && (Date.now() - lastClaim < COOLDOWN_MS)) {
-            return res.status(429).json({ success: false, error: "Tunggu 1 jam untuk klaim USDC lagi" });
+            return res.status(429).json({ success: false, error: "Wait 1 hour before claiming USDC again" });
         }
 
         // Mint USDC
-        console.log(`💵 Minting ${process.env.DRIP_AMOUNT_USDC} MockUSDC ke ${targetAddr}...`);
-        const tx = await usdcContract.mint(targetAddr, DRIP_USDC);
+        const tokenDecimals = await getTokenDecimals();
+        const dripUsdc = ethers.parseUnits(DRIP_USDC_AMOUNT, tokenDecimals);
+        console.log(`💵 Minting ${DRIP_USDC_AMOUNT} MockUSDC ke ${targetAddr}...`);
+        const tx = await usdcContract.mint(targetAddr, dripUsdc);
         await tx.wait();
 
         claimHistory.set(historyKey, Date.now());
 
         res.json({
             success: true,
-            message: `Berhasil mengirim ${process.env.DRIP_AMOUNT_USDC} MockUSDC!`,
+            message: `Successfully sent ${DRIP_USDC_AMOUNT} MockUSDC!`,
             txHash: tx.hash,
             explorer: `https://testnet.bscscan.com/tx/${tx.hash}`
         });
     } catch (error) {
         console.error("USDC Error:", error);
-        // Error handling spesifik jika wallet bukan owner
-        if (error.message && error.message.includes("caller is not the owner")) {
-            return res.status(403).json({ success: false, error: "Wallet faucet tidak punya izin mint (bukan owner MockUSDC)." });
-        }
-        res.status(500).json({ success: false, error: "Transaksi USDC gagal" });
+        res.status(500).json({ success: false, error: "USDC transaction failed" });
     }
 });
 

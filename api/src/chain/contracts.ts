@@ -61,6 +61,7 @@ export const abis = {
     ]),
 
     mockUsdc: parseAbi([
+        "function decimals() view returns (uint8)",
         "function mint(address to, uint256 amount)",
         "function balanceOf(address) view returns (uint256)",
         "event Transfer(address indexed from, address indexed to, uint256 value)",

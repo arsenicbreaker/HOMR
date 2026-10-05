@@ -2,13 +2,24 @@
 import React from 'react';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import Web3Provider from '../context/Web3Provider';
-import { DemoModeProvider } from '../context/DemoModeContext';
+import { TransactionProvider } from '../context/TransactionContext';
 import InvestorDashboard from '../pages/InvestorDashboard';
 import BorrowerDashboard from '../pages/BorrowerDashboard';
 import AdminPanel from '../pages/AdminPanel';
+
+vi.mock('../hooks/useProtocol', () => ({
+  useProtocolQuery: () => ({ refetch: vi.fn(), isPending: false }),
+  useProtocolTransaction: () => ({ transact: vi.fn(), refresh: vi.fn() }),
+}));
+vi.mock('../api/client', () => ({
+  fetchApplications: vi.fn(async () => ({ applications: [] })),
+  fetchAdminStatus: vi.fn(async () => null),
+  createApplication: vi.fn(),
+  reviewApplication: vi.fn(),
+}));
 
 beforeAll(() => {
   window.requestAnimationFrame = (callback) => {
@@ -22,11 +33,11 @@ afterEach(cleanup);
 function renderDashboard(Component) {
   return render(
     <Web3Provider>
-      <DemoModeProvider>
+      <TransactionProvider>
         <MemoryRouter>
           <Component />
         </MemoryRouter>
-      </DemoModeProvider>
+      </TransactionProvider>
     </Web3Provider>
   );
 }

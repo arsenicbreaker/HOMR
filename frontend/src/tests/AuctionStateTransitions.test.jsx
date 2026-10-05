@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
-import { DemoModeProvider } from '../context/DemoModeContext';
+import { TransactionProvider } from '../context/TransactionContext';
 import BorrowerDashboard from '../pages/BorrowerDashboard';
 
 vi.mock('wagmi', () => ({
@@ -11,19 +11,28 @@ vi.mock('wagmi', () => ({
   useReadContract: () => ({ data: null }),
   useWriteContract: () => ({ writeContractAsync: vi.fn() }),
   useConnect: () => ({ connect: vi.fn(), connectors: [] }),
-  useDisconnect: () => ({ disconnect: vi.fn() })
+  useDisconnect: () => ({ disconnect: vi.fn() }),
+  useSwitchChain: () => ({ switchChain: vi.fn() })
 }));
 
+const transaction = vi.hoisted(() => vi.fn());
+vi.mock('../api/client', () => ({ fetchApplications: vi.fn(async () => ({ applications: [] })), createApplication: vi.fn() }));
+vi.mock('../hooks/useProtocol', () => ({
+  useProtocolQuery: (resource) => ({ refetch: vi.fn(), data: resource === 'auction' ? { state: 'CommitPhase', bids: [], canCommit: true, canReveal: true, decimals: 18 } : { loans: [] } }),
+  useProtocolTransaction: () => ({ transact: transaction, refresh: vi.fn() })
+}));
+
+beforeEach(() => transaction.mockReset().mockResolvedValue('0xtest'));
 afterEach(cleanup);
 
 describe('Auction State Transitions & Commit/Reveal Bidding', () => {
   const renderBorrower = () => {
     return render(
-      <DemoModeProvider>
+      <TransactionProvider>
         <MemoryRouter>
           <BorrowerDashboard />
         </MemoryRouter>
-      </DemoModeProvider>
+      </TransactionProvider>
     );
   };
 
@@ -51,6 +60,7 @@ describe('Auction State Transitions & Commit/Reveal Bidding', () => {
     await waitFor(() => {
       expect(screen.getByText('Bid commitment submitted.')).toBeTruthy();
     });
+    expect(transaction).toHaveBeenCalledWith('commitBid', expect.objectContaining({ amount: '50000', rate: '9.5' }));
   });
 
   it('triggers reveal bid parameters submission', async () => {
@@ -64,5 +74,6 @@ describe('Auction State Transitions & Commit/Reveal Bidding', () => {
     await waitFor(() => {
       expect(screen.getByText('Bid parameters revealed and validated.')).toBeTruthy();
     });
+    expect(transaction).toHaveBeenCalledWith('revealBid', expect.objectContaining({ amount: '50000', rate: '9.5' }));
   });
 });

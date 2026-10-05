@@ -1,5 +1,8 @@
 import { prisma } from "../../db/client.js";
 import { approveBorrower } from "../../chain/signer.js";
+import { publicClient, abis } from '../../chain/contracts.js';
+import { config } from '../../config.js';
+import { applicationAmountToToken } from './units.js';
 
 export interface CreateApplicationInput {
     walletAddress: string;
@@ -89,9 +92,12 @@ export async function reviewApplication(id: string, input: ReviewInput) {
         throw new Error("MAX_PRINCIPAL_REQUIRED");
     }
 
+    const tokenDecimals = await publicClient.readContract({
+        address: config.addresses.mockUsdc, abi: abis.mockUsdc, functionName: 'decimals',
+    }) as number;
     const tx = await approveBorrower(
         application.applicant.walletAddress as `0x${string}`,
-        BigInt(input.maxPrincipal),
+        applicationAmountToToken(BigInt(input.maxPrincipal), tokenDecimals),
         application.propertyHash
     );
 

@@ -42,11 +42,17 @@ export async function fetchApplications() {
 }
 
 export async function createApplication(data) {
-  const res = await fetch(`${API_BASE}/api/applications`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(data),
-  });
+  const body = JSON.stringify(data);
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/api/applications`, {
+      method: 'POST',
+      headers,
+      body,
+    });
+  } catch {
+    throw new Error('Cannot reach the application service. Please try again once the connection is restored.');
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || err.error || `HTTP ${res.status}`);

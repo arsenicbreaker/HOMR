@@ -26,12 +26,6 @@ export const colors = {
       border: 'rgba(255, 214, 107, 0.25)',
       label: 'Verified offchain'
     },
-    simulated: {
-      color: '#FF8FA3',
-      bg: 'rgba(255, 143, 163, 0.08)',
-      border: 'rgba(255, 143, 163, 0.25)',
-      label: 'Simulated'
-    },
     pending: {
       color: '#90CAF9',
       bg: 'rgba(144, 202, 249, 0.08)',

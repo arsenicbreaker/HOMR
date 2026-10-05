@@ -1,6 +1,7 @@
 import React from 'react';
 import { createConfig, http, WagmiProvider } from 'wagmi';
-import { bscTestnet } from 'wagmi/chains';
+import { bscTestnet, localhost } from 'wagmi/chains';
+import { injected } from 'wagmi/connectors';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CHAIN_CONFIG } from '../contracts/addresses';
 
@@ -13,10 +14,14 @@ const queryClient = new QueryClient({
   }
 });
 
+const chain = CHAIN_CONFIG.chainId === 31337 ? { ...localhost, id: 31337 } : bscTestnet;
+if (![97, 31337].includes(CHAIN_CONFIG.chainId)) throw new Error('Supported chains: BNB Testnet (97) and local development (31337).');
+
 const config = createConfig({
-  chains: [bscTestnet],
+  chains: [chain],
+  connectors: [injected()],
   transports: {
-    [bscTestnet.id]: http(CHAIN_CONFIG.rpcUrl)
+    [chain.id]: http(CHAIN_CONFIG.rpcUrl, { timeout: 15000, retryCount: 1 })
   }
 });
 

@@ -99,7 +99,9 @@ export function AppLayout({
         {menuOpen && <button className="dashboard-sidebar-backdrop" type="button" aria-label="Close navigation" onClick={() => setMenuOpen(false)} />}
 
         <main id="dashboard-main" className="dashboard-main" tabIndex="-1">
-          {children}
+          <div key={activeSection} className="dashboard-section">
+            {children}
+          </div>
         </main>
       </div>
     </div>
