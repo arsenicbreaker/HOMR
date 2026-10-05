@@ -4,7 +4,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { DemoModeProvider } from '../context/DemoModeContext';
+import { TransactionProvider } from '../context/TransactionContext';
 import DashboardEntry from '../components/layout/DashboardEntry';
 import { App } from '../main';
 
@@ -20,9 +20,9 @@ beforeAll(() => {
 });
 afterEach(() => { cleanup(); readiness.pending = true; });
 
-function renderRoutes(initialRoute = '/', initialDemoMode = false) {
+function renderRoutes(initialRoute = '/') {
   const routes = (
-    <DemoModeProvider initialDemoMode={initialDemoMode}>
+    <TransactionProvider>
       <MemoryRouter initialEntries={[initialRoute]}>
         <Routes>
           <Route path="/" element={<App />} />
@@ -31,7 +31,7 @@ function renderRoutes(initialRoute = '/', initialDemoMode = false) {
           <Route path="/app/admin" element={<DashboardEntry role="admin"><h1>Admin ready</h1></DashboardEntry>} />
         </Routes>
       </MemoryRouter>
-    </DemoModeProvider>
+    </TransactionProvider>
   );
   return render(routes);
 }
@@ -40,7 +40,7 @@ describe('dashboard entry loading', () => {
   it('appears after choosing a dashboard and exits when the initial contract read settles', async () => {
     const user = userEvent.setup();
     const view = renderRoutes();
-    await user.click(screen.getAllByRole('button', { name: 'Start demo' })[0]);
+    await user.click(screen.getAllByRole('button', { name: 'Open dashboard' })[0]);
     await user.click(screen.getByRole('button', { name: /Borrower/ }));
 
     expect(screen.getByRole('status').textContent).toContain('Preparing your borrower dashboard');
@@ -48,21 +48,22 @@ describe('dashboard entry loading', () => {
 
     readiness.pending = false;
     view.rerender(
-      <DemoModeProvider>
+      <TransactionProvider>
         <MemoryRouter initialEntries={['/']}>
           <Routes>
             <Route path="/" element={<App />} />
             <Route path="/app/borrow" element={<DashboardEntry role="borrower"><h1>Borrower ready</h1></DashboardEntry>} />
           </Routes>
         </MemoryRouter>
-      </DemoModeProvider>
+      </TransactionProvider>
     );
     expect(screen.getByRole('heading', { name: 'Borrower ready' })).toBeTruthy();
     expect(screen.queryByText('Preparing your borrower dashboard')).toBeNull();
   });
 
-  it('does not block an explicitly selected demo dashboard', () => {
-    renderRoutes('/app/invest', true);
+  it('opens the live dashboard once its initial query has settled', () => {
+    readiness.pending = false;
+    renderRoutes('/app/invest');
     expect(screen.getByRole('heading', { name: 'Investor ready' })).toBeTruthy();
     expect(screen.queryByRole('status')).toBeNull();
   });

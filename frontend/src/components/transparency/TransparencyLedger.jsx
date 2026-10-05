@@ -5,14 +5,14 @@ import { useTransparencyEvents } from '../../hooks/useTransparencyEvents';
 import ChainStatus from '../layout/ChainStatus';
 
 export function TransparencyLedger({ embedded = false }) {
-  const { events, isDemoMode, isLoading, error, refresh, fromBlock, toBlock } = useTransparencyEvents();
+  const { events, isLoading, error, refresh, fromBlock, toBlock } = useTransparencyEvents();
 
   return (
     <section className={`transparency-ledger${embedded ? ' transparency-ledger--embedded' : ''}`}>
       <header className="transparency-ledger__header">
         <div>
           <h2>Transparency ledger</h2>
-          <p>{isDemoMode ? 'Simulated workflow events.' : `Latest 50 events in the last 2,000 blocks${fromBlock ? ` (${fromBlock} to ${toBlock})` : ''}. Older history is available on the block explorer.`}</p>
+          <p>{`Latest 50 events in the last 2,000 blocks${fromBlock ? ` (${fromBlock} to ${toBlock})` : ''}. Older history is available on the block explorer.`}</p>
         </div>
         <span className="transparency-ledger__count">{events.length} events</span>
       </header>

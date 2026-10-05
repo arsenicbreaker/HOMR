@@ -2,21 +2,20 @@ import { useMemo, useState } from 'react';
 import { useAccount, useConfig, usePublicClient, useSwitchChain, useWriteContract } from 'wagmi';
 import { getAccount } from 'wagmi/actions';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useDemoMode } from '../context/DemoModeContext';
+import { useTransactionState } from '../context/TransactionContext';
 import { CHAIN_CONFIG, CONTRACT_ADDRESSES } from '../contracts/addresses';
 import { createProtocol, sameAddress } from '../contracts/protocol';
 
 export const protocolKey = ['protocol', CHAIN_CONFIG.chainId, ...Object.values(CONTRACT_ADDRESSES)];
 
 export function useProtocolQuery(resource, personal = false) {
-  const { isDemoMode } = useDemoMode();
   const { address } = useAccount();
   const client = usePublicClient({ chainId: CHAIN_CONFIG.chainId });
   const protocol = useMemo(() => client && createProtocol(client, CONTRACT_ADDRESSES, CHAIN_CONFIG.chainId), [client]);
   return useQuery({
     queryKey: [...protocolKey, resource, personal ? address?.toLowerCase() || null : null],
     queryFn: () => protocol[resource](personal ? address : undefined),
-    enabled: !isDemoMode && Boolean(protocol),
+    enabled: Boolean(protocol),
     staleTime: 5000,
     refetchInterval: resource === 'recentEvents' ? 30000 : 10000,
     retry: 1
@@ -24,7 +23,7 @@ export function useProtocolQuery(resource, personal = false) {
 }
 
 export function useProtocolTransaction() {
-  const { isTransacting, setIsTransacting } = useDemoMode();
+  const { isTransacting, setIsTransacting } = useTransactionState();
   const config = useConfig();
   const { address, isConnected, chainId } = useAccount();
   const client = usePublicClient({ chainId: CHAIN_CONFIG.chainId });

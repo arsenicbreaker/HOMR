@@ -17,7 +17,8 @@ import InboxRow from '../components/ui/InboxRow';
 import TransparencyLedger from '../components/transparency/TransparencyLedger';
 import { useAuction } from '../hooks/useAuction';
 import { useLoanManager } from '../hooks/useLoanManager';
-import { createApplication } from '../api/client';
+import { createApplication, fetchApplications } from '../api/client';
+import ApplicationHistory from '../components/borrower/ApplicationHistory';
 import { bidValues, parseAmount } from '../contracts/protocol';
 import { CHAIN_CONFIG, CONTRACT_ADDRESSES } from '../contracts/addresses';
 import ChainStatus from '../components/layout/ChainStatus';
@@ -32,7 +33,7 @@ const borrowerNavigation = [
 ];
 
 export function BorrowerDashboard() {
-  const { isDemoMode, state: auctionState, userApproval, commitBid, revealBid, canCommit, canReveal,
+  const { state: auctionState, userApproval, commitBid, revealBid, canCommit, canReveal,
     commitDeadline, revealDeadline, commitment, alreadyRevealed, decimals, isLoading, error, refresh, progress } = useAuction();
   const { loans, repayLoan, isLoading: loansLoading, error: loansError, refresh: refreshLoans, progress: repayProgress } = useLoanManager({ borrowerOnly: true });
   const { address } = useAccount();
@@ -48,16 +49,22 @@ export function BorrowerDashboard() {
   const [bidAmount, setBidAmount] = useState('50000');
   const [bidRate, setBidRate] = useState('9.5');
   const [bidTerm, setBidTerm] = useState('12');
-  const [bidSalt, setBidSalt] = useState(() => isDemoMode ? 'housd_demo_salt_2026' : Array.from(crypto.getRandomValues(new Uint8Array(32)), (byte) => byte.toString(16).padStart(2, '0')).join(''));
+  const [bidSalt, setBidSalt] = useState(() => Array.from(crypto.getRandomValues(new Uint8Array(32)), (byte) => byte.toString(16).padStart(2, '0')).join(''));
   const [statusMsg, setStatusMsg] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [bidStorageWarning, setBidStorageWarning] = useState('');
-  const bidStorageKey = !isDemoMode && address && commitDeadline
+  const [applicationRevision, setApplicationRevision] = useState(0);
+  const [applicationHistory, setApplicationHistory] = useState({ wallet: null, items: [], status: 'idle' });
+  const applicationWallet = address ? address.toLowerCase() : null;
+  const applications = applicationWallet && applicationHistory.wallet === applicationWallet ? applicationHistory.items : [];
+  const applicationsStatus = !applicationWallet ? 'idle' : applicationHistory.wallet === applicationWallet ? applicationHistory.status : 'loading';
+  const refreshApplications = () => setApplicationRevision((revision) => revision + 1);
+  const bidStorageKey = address && commitDeadline
     ? `homr-bid:${CHAIN_CONFIG.chainId}:${CONTRACT_ADDRESSES.CreditAuction.toLowerCase()}:${address.toLowerCase()}:${commitDeadline}` : null;
 
   useEffect(() => {
     setBidAmount('50000'); setBidRate('9.5'); setBidTerm('12');
-    setBidSalt(isDemoMode ? 'housd_demo_salt_2026' : Array.from(crypto.getRandomValues(new Uint8Array(32)), (byte) => byte.toString(16).padStart(2, '0')).join(''));
+    setBidSalt(Array.from(crypto.getRandomValues(new Uint8Array(32)), (byte) => byte.toString(16).padStart(2, '0')).join(''));
     setBidStorageWarning('');
     if (!bidStorageKey) return;
     try {
@@ -65,14 +72,38 @@ export function BorrowerDashboard() {
       const saved = record?.entries?.[commitment] || record?.latest;
       if (saved) { setBidAmount(saved.amount); setBidRate(saved.rate); setBidTerm(saved.term); setBidSalt(saved.salt); }
     } catch { setBidStorageWarning('This browser cannot restore your bid. Enter the exact original terms and salt before revealing.'); }
-  }, [bidStorageKey, isDemoMode, commitment]);
+  }, [bidStorageKey, commitment]);
 
-  useEffect(() => { setStatusMsg(null); }, [isDemoMode, address]);
+  useEffect(() => { setStatusMsg(null); }, [address]);
+
+  useEffect(() => {
+    if (!applicationWallet) {
+      setApplicationHistory({ wallet: null, items: [], status: 'idle' });
+      return;
+    }
+    let cancelled = false;
+    setApplicationHistory((previous) => ({
+      wallet: applicationWallet,
+      items: previous.wallet === applicationWallet ? previous.items : [],
+      status: 'loading',
+    }));
+    fetchApplications().then((response) => {
+      if (!Array.isArray(response?.applications)) throw new Error('Invalid application history response');
+      const items = response.applications
+        .filter((application) => application.applicant?.walletAddress?.toLowerCase() === applicationWallet)
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      if (!cancelled) setApplicationHistory({ wallet: applicationWallet, items, status: 'ready' });
+    }).catch(() => {
+      if (!cancelled) setApplicationHistory((previous) => ({ ...previous, status: 'error' }));
+    });
+    return () => { cancelled = true; };
+  }, [applicationWallet, applicationRevision]);
 
   const activeLoans = loans.filter((loan) => loan.isActive);
   const isApproved = Boolean(userApproval?.isApproved);
-  const workflowStage = activeLoans.length > 0 ? 3 : isApproved ? 2 : 0;
-  const approvalStatus = isLoading ? 'Loading' : error ? 'Unavailable' : !isDemoMode && !address ? 'Connect wallet' : isApproved ? 'Approved' : 'Not approved';
+  const hasPendingApplication = applications.some((application) => application.status === 'PENDING');
+  const workflowStage = activeLoans.length > 0 ? 3 : isApproved ? 2 : hasPendingApplication ? 1 : 0;
+  const approvalStatus = isLoading ? 'Loading' : error ? 'Unavailable' : !address ? 'Connect wallet' : isApproved ? 'Approved' : 'Not approved';
   const outstandingPrincipal = activeLoans.reduce((total, loan) => total + parseFloat(String(loan.principal).replace(/,/g, '')), 0);
 
   const withProcessing = async (loadingText, action, successText, fallbackText) => {
@@ -95,7 +126,6 @@ export function BorrowerDashboard() {
     const submitted = await withProcessing(
       'Submitting application to the credit database...',
       () => {
-        if (isDemoMode) return;
         if (!address) throw new Error('Connect your borrower wallet before applying.');
         if (decimals === undefined) throw new Error('Wait for the token configuration to load.');
         return createApplication({
@@ -106,10 +136,13 @@ export function BorrowerDashboard() {
         requestedRate: Number(parseAmount(appRate, 2, true)),
         requestedTerm: Number(parseAmount(appTerm, 0)) * 30 * 86400
       }); },
-      isDemoMode ? 'Demo application simulated. No request was sent.' : 'Financing application submitted. A Credit Manager will review the property documents.',
+      'Financing application submitted. A Credit Manager will review the property documents.',
       'Application submission failed.'
     );
-    if (submitted) setShowAppForm(false);
+    if (submitted) {
+      setShowAppForm(false);
+      refreshApplications();
+    }
   };
 
   const handleCommitSubmit = async (event) => {
@@ -156,7 +189,9 @@ export function BorrowerDashboard() {
   };
 
   const nextAction = !isApproved
-    ? { label: 'Complete credit application', section: 'credit', detail: 'Submit the property reference and requested financing terms for review.' }
+    ? hasPendingApplication
+      ? { label: 'View submitted application', section: 'credit', detail: 'Your application is awaiting a Credit Manager decision. Check its status in your application history.' }
+      : { label: 'Complete credit application', section: 'credit', detail: 'Submit the property reference and requested financing terms for review.' }
     : auctionState === 'CommitPhase'
       ? { label: 'Commit borrowing bid', section: 'auction', detail: 'Your credit is approved. Commit your bid before the current window closes.' }
       : auctionState === 'RevealPhase'
@@ -181,12 +216,12 @@ export function BorrowerDashboard() {
             eyebrow="Borrower workspace"
             title="Loan overview"
             description="A focused view of your approval, borrowing stage, active financing, and next required action."
-            chipType={isDemoMode ? 'simulated' : 'onchain'}
+            chipType="onchain"
           />
 
           <SummaryGrid>
             <PrimarySummary eyebrow="Approved borrowing limit" value={isApproved ? `$${userApproval.maxPrincipal}` : approvalStatus} unit={isApproved ? 'mUSDC available for auction' : 'Onchain approval status'} detail={userApproval?.propertyHash || 'No approved property reference loaded'} />
-            <Metric label="Outstanding" value={loansLoading || loansError ? 'Unavailable' : !isDemoMode && !address ? 'Connect wallet' : `$${outstandingPrincipal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`} unit="active principal" />
+            <Metric label="Outstanding" value={loansLoading || loansError ? 'Unavailable' : !address ? 'Connect wallet' : `$${outstandingPrincipal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`} unit="active principal" />
             <Metric label="Auction phase" value={auctionState} unit="current cycle" tone="accent" />
             <Metric label="Property approval" value={approvalStatus} unit="recorded approval" tone={isApproved ? 'success' : 'warning'} />
           </SummaryGrid>
@@ -253,6 +288,7 @@ export function BorrowerDashboard() {
               </form>
             </Panel>
           )}
+          <ApplicationHistory applications={applications} status={applicationsStatus} address={address} onRefresh={refreshApplications} />
         </>
       )}
 
@@ -262,13 +298,13 @@ export function BorrowerDashboard() {
             eyebrow="Borrowing process"
             title="Borrowing auction"
             description="Commit private bid terms first, then reveal those same values during the reveal window."
-            chipType={isDemoMode ? 'simulated' : 'onchain'}
+            chipType="onchain"
             chipLabel={`Phase: ${auctionState}`}
           />
 
           <Panel title="Auction action" description="Only the selected phase form is visible.">
             {commitDeadline && <Notice>Commit deadline: {new Date(commitDeadline).toLocaleString()}. Reveal deadline: {new Date(revealDeadline).toLocaleString()}.</Notice>}
-            {!isDemoMode && alreadyRevealed && <Notice>This contract retains your previous reveal. This wallet cannot reveal another bid, even in a later cycle.</Notice>}
+            {alreadyRevealed && <Notice>This contract retains your previous reveal. This wallet cannot reveal another bid, even in a later cycle.</Notice>}
             {bidStorageWarning && <Notice type="error">{bidStorageWarning}</Notice>}
             <div className="dashboard-tabs" role="tablist" aria-label="Auction action">
               <button type="button" role="tab" aria-selected={auctionAction === 'commit'} className={auctionAction === 'commit' ? 'is-active' : ''} onClick={() => setAuctionAction('commit')}>1. Commit bid</button>
@@ -306,14 +342,14 @@ export function BorrowerDashboard() {
 
       {activeSection === 'loans' && (
         <>
-          <PageIntro eyebrow="Loan management" title="Active loan" description="Review principal, borrowing terms, collateral reference, and maturity for each active loan." chipType={isDemoMode ? 'simulated' : 'onchain'} />
+          <PageIntro eyebrow="Loan management" title="Active loan" description="Review principal, borrowing terms, collateral reference, and maturity for each active loan." chipType="onchain" />
           <Panel title="Current financing" description="Loans created after auction allocation.">
             {loansLoading || loansError ? <p>Waiting for loan data.</p> : activeLoans.length === 0 ? (
               <EmptyState title="No active loan" detail="An active loan will appear after your borrowing auction is finalized." />
             ) : (
               <div className="dashboard-row-list">
                 {activeLoans.map((loan) => (
-                  <InboxRow key={loan.id} statusDotColor="var(--badge-success)" title={`Active loan #${loan.id}`} subtitle={`Principal $${loan.principal} · ${loan.rate}% APR · ${loan.term} months · Collateral ${loan.propertyHash}`} dataType={isDemoMode ? 'simulated' : 'onchain'} customRight={<span className="dashboard-row-status">{loan.maturityDate ? `Matures ${loan.maturityDate}` : 'Maturity not recorded'}</span>} />
+                  <InboxRow key={loan.id} statusDotColor="var(--badge-success)" title={`Active loan #${loan.id}`} subtitle={`Principal $${loan.principal} · ${loan.rate}% APR · ${loan.term} months · Collateral ${loan.propertyHash}`} dataType="onchain" customRight={<span className="dashboard-row-status">{loan.maturityDate ? `Matures ${loan.maturityDate}` : 'Maturity not recorded'}</span>} />
                 ))}
               </div>
             )}
@@ -323,11 +359,11 @@ export function BorrowerDashboard() {
 
       {activeSection === 'repayment' && (
         <>
-          <PageIntro eyebrow="Loan management" title="Repayment" description="Select an active loan and submit principal repayment through the existing Loan Manager flow." chipType={isDemoMode ? 'simulated' : 'onchain'} />
+          <PageIntro eyebrow="Loan management" title="Repayment" description="Select an active loan and submit principal repayment through the existing Loan Manager flow." chipType="onchain" />
           {loansLoading || loansError ? <p>Waiting for loan data.</p> : activeLoans.length === 0 ? (
             <EmptyState title="Nothing to repay" detail="Repayment becomes available when a loan is active." />
           ) : activeLoans.map((loan) => (
-            <Panel key={loan.id} title={`Loan #${loan.id}`} description={`Outstanding principal: $${loan.principal} mUSDC`} chipType={isDemoMode ? 'simulated' : 'onchain'}>
+            <Panel key={loan.id} title={`Loan #${loan.id}`} description={`Outstanding principal: $${loan.principal} mUSDC`} chipType="onchain">
               <form className="dashboard-inline-form" onSubmit={(event) => handleRepaySubmit(event, loan.id, loan.principal)}>
                 <Field label="Full principal repayment (mUSDC)"><input value={loan.principal} readOnly /></Field>
                 <button className="dashboard-primary-button" type="submit" disabled={isProcessing}>{isProcessing ? 'Processing...' : 'Submit repayment'}</button>
@@ -340,6 +376,7 @@ export function BorrowerDashboard() {
       {activeSection === 'activity' && (
         <>
           <PageIntro eyebrow="Records" title="Activity & proof" description="Approval, auction, and repayment events associated with the financing workflow." />
+          <ApplicationHistory applications={applications} status={applicationsStatus} address={address} onRefresh={refreshApplications} />
           <TransparencyLedger embedded />
         </>
       )}

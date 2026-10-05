@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
-import { DemoModeProvider } from '../context/DemoModeContext';
+import { TransactionProvider } from '../context/TransactionContext';
 import InvestorDashboard from '../pages/InvestorDashboard';
 
 vi.mock('wagmi', () => ({
@@ -15,21 +15,23 @@ vi.mock('wagmi', () => ({
   useSwitchChain: () => ({ switchChain: vi.fn() })
 }));
 
+const transaction = vi.hoisted(() => vi.fn());
 vi.mock('../hooks/useProtocol', () => ({
-  useProtocolQuery: () => ({ refetch: vi.fn() }),
-  useProtocolTransaction: () => ({ transact: vi.fn(), refresh: vi.fn() })
+  useProtocolQuery: (resource) => ({ refetch: vi.fn(), data: resource === 'vault' ? { userShares: '25,000.00', userDeposited: '25,000.00' } : { loans: [] } }),
+  useProtocolTransaction: () => ({ transact: transaction, refresh: vi.fn() })
 }));
 
+beforeEach(() => transaction.mockReset().mockResolvedValue('0xtest'));
 afterEach(cleanup);
 
 describe('Deposit Form Validation & Execution', () => {
   const renderDashboard = () => {
     return render(
-      <DemoModeProvider initialDemoMode>
+      <TransactionProvider>
         <MemoryRouter>
           <InvestorDashboard />
         </MemoryRouter>
-      </DemoModeProvider>
+      </TransactionProvider>
     );
   };
 
@@ -54,7 +56,7 @@ describe('Deposit Form Validation & Execution', () => {
     });
   });
 
-  it('updates vault shares and TVL upon successful demo deposit', async () => {
+  it('submits the deposit through the protocol transaction handler', async () => {
     renderDashboard();
     fireEvent.click(screen.getByRole('button', { name: /Capital.*Deposit/ }));
     const input = await screen.findByLabelText('Deposit amount (mUSDC)');
@@ -66,5 +68,16 @@ describe('Deposit Form Validation & Execution', () => {
     await waitFor(() => {
       expect(screen.getByText('Deposited 5000 mUSDC into the vault.')).toBeTruthy();
     });
+    expect(transaction).toHaveBeenCalledWith('deposit', '5000');
+  });
+
+  it('shows a rejected transaction without claiming a successful deposit', async () => {
+    transaction.mockRejectedValueOnce(new Error('User rejected the request.'));
+    renderDashboard();
+    fireEvent.click(screen.getByRole('button', { name: /Capital.*Deposit/ }));
+    fireEvent.change(screen.getByLabelText('Deposit amount (mUSDC)'), { target: { value: '5000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Deposit and mint shares' }));
+    expect(await screen.findByText('User rejected the request.')).toBeTruthy();
+    expect(screen.queryByText('Deposited 5000 mUSDC into the vault.')).toBeNull();
   });
 });

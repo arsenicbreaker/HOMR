@@ -5,7 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import './styles.css';
 
 import Web3Provider from './context/Web3Provider';
-import { DemoModeProvider } from './context/DemoModeContext';
+import { TransactionProvider } from './context/TransactionContext';
 import InvestorDashboard from './pages/InvestorDashboard';
 import BorrowerDashboard from './pages/BorrowerDashboard';
 import AdminPanel from './pages/AdminPanel';
@@ -20,7 +20,7 @@ import { API_BASE, fetchVault, fetchLoans, fetchEvents } from './api/client';
 const proofItems = [
   { label: 'Vault', value: 'Housing Credit Vault', state: 'ONCHAIN' },
   { label: 'Network', value: 'BNB Chain Testnet', state: 'ONCHAIN' },
-  { label: 'Borrower data', value: 'Demo example', state: 'SIMULATED' },
+  { label: 'Applications', value: 'Credit database', state: 'OFFCHAIN' },
   { label: 'Collateral review', value: 'Private reference', state: 'VERIFIED OFFCHAIN' },
 ];
 
@@ -129,7 +129,7 @@ function HeroAppPreview() {
             <span className="topbar-divider">·</span>
             <span>Housing Credit Vault (BNB Testnet)</span>
           </div>
-          <span className="state-chip state-chip--onchain">LIVE ONCHAIN</span>
+          <span className="state-chip state-chip--onchain">BNB TESTNET</span>
         </div>
         <div className="hero-app-body">
           <div className="hero-app-sidebar">
@@ -147,36 +147,8 @@ function HeroAppPreview() {
             </div>
           </div>
           <div className="hero-app-main">
-            <div className="hero-app-stat-grid">
-              <div className="app-stat-card">
-                <span className="app-stat-label">Total Vault Liquidity</span>
-                <span className="app-stat-value">$2,500,000 USDC</span>
-              </div>
-              <div className="app-stat-card">
-                <span className="app-stat-label">Auction Mode</span>
-                <span className="app-stat-value">Sealed Commit-Reveal</span>
-              </div>
-              <div className="app-stat-card">
-                <span className="app-stat-label">Max Risk LTV</span>
-                <span className="app-stat-value">70.0%</span>
-              </div>
-            </div>
-            <div className="hero-app-rows">
-              <div className="app-row">
-                <div className="app-row-info">
-                  <span className="app-row-title">Credit Application #0412, Cluster Residential BSD</span>
-                  <span className="app-row-sub">Offchain Review Complete · Sealed Bid #0x82f...a1</span>
-                </div>
-                <span className="state-chip state-chip--onchain">ALLOCATED ONCHAIN</span>
-              </div>
-              <div className="app-row">
-                <div className="app-row-info">
-                  <span className="app-row-title">Credit Application #0413, Modern Housing Bintaro</span>
-                  <span className="app-row-sub">Collateral Document Verification · Risk Limit Checked</span>
-                </div>
-                <span className="state-chip state-chip--offchain">VERIFIED OFFCHAIN</span>
-              </div>
-            </div>
+            <LiveVaultPanel />
+            <LiveLoansPanel />
           </div>
         </div>
       </div>
@@ -199,7 +171,7 @@ function useSafeNavigate() {
 /**
  * LiveVaultPanel
  * Baca state vault langsung dari backend → kontrak BNB testnet.
- * Semua angka di sini berasal dari onchain (kecuali yang ditandai SIMULATED).
+ * Data vault dibaca dari API yang terhubung ke kontrak testnet.
  */
 function LiveVaultPanel() {
   const [vault, setVault] = useState(null);
@@ -230,7 +202,7 @@ function LiveVaultPanel() {
           <span className="live-panel-label">Housing Credit Vault</span>
           <span className="live-panel-sublabel">BNB Chain Testnet · read-only</span>
         </div>
-        <span className={`state-chip state-chip--${status === 'ok' ? 'onchain' : status === 'error' ? 'simulated' : 'offchain'}`}>
+        <span className={`state-chip state-chip--${status === 'ok' ? 'onchain' : status === 'error' ? 'error' : 'offchain'}`}>
           {status === 'idle' && 'LOADING'}
           {status === 'loading' && 'LOADING'}
           {status === 'ok' && 'LIVE ONCHAIN'}
@@ -355,7 +327,7 @@ export function App() {
   const chooseJourney = (nextJourney) => {
     setJourney(nextJourney);
     setDialogOpen(false);
-    requestAnimationFrame(() => document.querySelector('#demo')?.scrollIntoView({ behavior: 'smooth' }));
+    requestAnimationFrame(() => document.querySelector('#journeys')?.scrollIntoView({ behavior: 'smooth' }));
     if (nextJourney === 'investor') {
       navigate('/app/invest');
     } else if (nextJourney === 'borrower') {
@@ -365,7 +337,7 @@ export function App() {
     }
   };
 
-  const activeJourney = journeys[journey];
+  const activeJourney = journeys[journey] || journeys.investor;
 
   return (
     <div className="app-shell">
@@ -394,14 +366,14 @@ export function App() {
             aria-label="Main navigation"
           >
             <a href="#cara-kerja" onClick={() => setMenuOpen(false)}>How it works</a>
-            <a href="#demo" onClick={() => setMenuOpen(false)}>Demo</a>
+            <a href="#journeys" onClick={() => setMenuOpen(false)}>Journeys</a>
             <a href="#transparansi" onClick={() => setMenuOpen(false)}>Transparency</a>
             <a href="#risiko" onClick={() => setMenuOpen(false)}>Risks</a>
             <Link to="/faucet" onClick={() => setMenuOpen(false)}>Faucet</Link>
           </nav>
           <div className="topbar-actions">
             <button className="cta-button" type="button" onClick={() => setDialogOpen(true)}>
-              Start demo
+              Open dashboard
             </button>
           </div>
         </header>
@@ -426,7 +398,7 @@ export function App() {
           </p>
           <div className="hero-actions">
             <button className="cta-button cta-button--primary" type="button" onClick={() => setDialogOpen(true)}>
-              Start demo
+              Open dashboard
               <span aria-hidden="true" className="cta-arrow">›</span>
             </button>
             <a className="ghost-link" href="#cara-kerja">
@@ -436,11 +408,11 @@ export function App() {
               </svg>
             </a>
           </div>
-          <p className="hero-disclosure">Hackathon simulation. Not an investment product or a promise of returns.</p>
+          <p className="hero-disclosure">BNB Testnet. Uses test tokens with no monetary value.</p>
 
           <HeroAppPreview />
 
-          <div className="proof-strip" aria-label="Demo status summary">
+          <div className="proof-strip" aria-label="Protocol status summary">
             {proofStats.map((stat) => (
               <div className="proof-stat" key={stat.id}>
                 <span className="proof-stat-label">{stat.label}</span>
@@ -473,7 +445,7 @@ export function App() {
           </ul>
         </section>
 
-        <section className="demo" id="demo" aria-label={activeJourney.title}>
+        <section className="journeys" id="journeys" aria-label={activeJourney.title}>
           <StickyScroll
             activeId={journey}
             onActiveChange={setJourney}
@@ -498,8 +470,8 @@ export function App() {
             }))}
           >
             <p className="sticky-scroll-notice">
-              <strong>Simulated demo</strong>
-              <span>Try the demo without a wallet or real funds. Onchain transactions are labeled separately.</span>
+              <strong>BNB Testnet</strong>
+              <span>Connect your wallet to submit transactions. Use the faucet to obtain test tokens.</span>
             </p>
           </StickyScroll>
         </section>
@@ -508,7 +480,7 @@ export function App() {
           <header className="section-header">
             <p className="section-eyebrow">Evidence before claims</p>
             <h2 id="transparency-title" className="section-title">
-              Know what is real, private, or simulated.
+              Trace onchain activity and offchain reviews.
             </h2>
           </header>
 
@@ -585,11 +557,11 @@ export function App() {
             transition={{ duration: reducedMotion ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] }}
           >
             <div className="dialog-header">
-              <p className="section-eyebrow">SIMULATED DEMO</p>
+              <p className="section-eyebrow">CHOOSE YOUR DASHBOARD</p>
               <button
                 className="dialog-close"
                 type="button"
-                aria-label="Close demo selection"
+                aria-label="Close dashboard selection"
                 onClick={() => setDialogOpen(false)}
               >
                 <span aria-hidden="true">×</span>
@@ -630,7 +602,7 @@ export function App() {
               </button>
             </div>
             <p className="dialog-fineprint">
-              No wallet needed. All values on the demo page are labeled by source.
+              View live testnet data. Connect your wallet to submit applications and transactions.
               <span className="dialog-hint">
                 Press <Kbd>ESC</Kbd> to close.
               </span>
@@ -649,7 +621,7 @@ if (rootElement) {
   createRoot(rootElement).render(
     <React.StrictMode>
       <Web3Provider>
-        <DemoModeProvider>
+        <TransactionProvider>
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<App />} />
@@ -659,7 +631,7 @@ if (rootElement) {
               <Route path="/faucet" element={<FaucetPage />} />
             </Routes>
           </BrowserRouter>
-        </DemoModeProvider>
+        </TransactionProvider>
       </Web3Provider>
     </React.StrictMode>,
   );

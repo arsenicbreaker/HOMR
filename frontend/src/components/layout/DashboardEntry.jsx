@@ -1,5 +1,4 @@
 import React from 'react';
-import { useDemoMode } from '../../context/DemoModeContext';
 import { useProtocolQuery } from '../../hooks/useProtocol';
 
 const dashboardData = {
@@ -9,11 +8,10 @@ const dashboardData = {
 };
 
 export default function DashboardEntry({ role, children }) {
-  const { isDemoMode } = useDemoMode();
   const { resource, personal, title, detail } = dashboardData[role];
   const { isPending } = useProtocolQuery(resource, personal);
 
-  if (isDemoMode || !isPending) return children;
+  if (!isPending) return children;
 
   return (
     <main className="dashboard-entry" aria-busy="true">

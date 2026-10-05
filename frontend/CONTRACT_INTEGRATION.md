@@ -1,6 +1,6 @@
 # Dashboard contract integration
 
-The dashboards default to live BNB Testnet data. The toolbar's **Enable demo mode** button switches to explicitly simulated data. Connecting a wallet does not silently change the selected mode.
+The dashboards use live BNB Testnet data only. The demo switch and seeded data have been removed. Connecting a wallet enables personal reads and signed transactions; public reads remain available without a wallet. `TransactionProvider` coordinates transaction state and disables wallet disconnect while a transaction is in progress.
 
 ## Data and transactions
 
@@ -46,7 +46,7 @@ Remove-Item Env:HOMR_LIVE_READ
 
 The Solidity integration test compiles the unchanged sources with the backend's bundled solc 0.8.26 and runs an isolated in-process Hardhat chain, with test accounts only. It covers mint/setup, deposit, redeem, approval, commit, deadline transition, invalid reveal rejection, reveal, finalization, loan reads, wrong-borrower rejection, full repayment and decoded events. It also verifies the contract's retained-reveal limitation. It skips when backend dependencies are absent. The optional live test performs reads only and is skipped in the normal test command.
 
-Additional tests cover exact unit conversion, approval confirmation ordering, reverted/cancelled approval, wrong RPC chain, RPC errors, live history without demo fallback, wallet-specific loans and reveal availability. UI navigation/demo tests remain in place.
+Additional tests cover exact unit conversion, approval confirmation ordering, reverted/cancelled approval, wrong RPC chain, RPC errors, live history without fabricated fallback, wallet-specific loans and reveal availability. UI navigation and transaction tests use test-only mocks of protocol responses.
 
 For the API: `npm ci`, `npm run prisma:generate`, then `npm run build`. No database migration is needed. API compilation and amount conversion are verified; no review was sent through a real API signer and no user's wallet transaction was signed during development.
 

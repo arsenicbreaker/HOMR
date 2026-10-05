@@ -87,7 +87,7 @@ export function FaucetPage() {
             <span>Built on</span>
             <span className="hero-network-brand"><img src="/brand/bnb-chain-symbol.svg" width="22" height="22" alt="" /><strong>BNB Chain Testnet</strong></span>
           </div>
-          <h1 id="faucet-title">Test tokens to <span className="hero-highlight">start the demo.</span></h1>
+          <h1 id="faucet-title">Test tokens to <span className="hero-highlight">use HOUSD.</span></h1>
           <p>Get BNB for transaction fees and mUSDC to try depositing into the HOUSD vault. These tokens work only on testnet.</p>
           <span className="faucet-intro__note">BNB CHAIN TESTNET <span aria-hidden="true">·</span> CHAIN ID 97 <span aria-hidden="true">·</span> NO MONETARY VALUE</span>
         </section>

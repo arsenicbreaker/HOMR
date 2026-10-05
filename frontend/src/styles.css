@@ -974,16 +974,16 @@ a:focus-visible,
   border-color: transparent;
 }
 
-.state-chip--simulated,
+.state-chip--error,
 .state-chip--verified-offchain {
   color: var(--on-primary);
   background: var(--primary);
   border-color: transparent;
 }
 
-/* ---------- Demo Section ---------- */
+/* ---------- Journeys ---------- */
 
-.demo {
+.journeys {
   padding: var(--space-section) 32px;
   max-width: 1200px;
   width: 100%;
@@ -1393,7 +1393,7 @@ a:focus-visible,
   }
 
   .decisions,
-  .demo,
+  .journeys,
   .transparency {
     padding: 64px 20px;
   }
@@ -3008,22 +3008,7 @@ a:focus-visible,
 
 .data-chip--onchain .data-chip__dot { background: var(--badge-success); }
 .data-chip--offchain .data-chip__dot { background: var(--badge-warning); }
-.data-chip--simulated .data-chip__dot { background: var(--primary); }
 .data-chip--pending .data-chip__dot { background: var(--badge-info); }
-
-.demo-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 5px;
-  border: 1px solid rgba(203, 183, 251, 0.35);
-  border-radius: var(--rounded-xs);
-  color: var(--ink);
-  background: rgba(203, 183, 251, 0.08);
-  font-family: var(--mono-font);
-  font-size: 8px;
-  font-weight: 600;
-  line-height: 1.2;
-}
 
 .wallet-controls {
   display: flex;
@@ -3031,7 +3016,6 @@ a:focus-visible,
   gap: 8px;
 }
 
-.wallet-mode,
 .wallet-account {
   min-height: 40px;
   display: inline-flex;
@@ -3047,19 +3031,11 @@ a:focus-visible,
   transition: color var(--transition), border-color var(--transition), background var(--transition);
 }
 
-.wallet-mode:hover,
 .wallet-account:hover {
   color: var(--ink);
   border-color: var(--stone);
 }
 
-.wallet-mode.is-active {
-  color: var(--primary);
-  border-color: rgba(203, 183, 251, 0.4);
-  background: rgba(203, 183, 251, 0.07);
-}
-
-.wallet-mode.is-active .wallet-control__dot { background: var(--primary); }
 .wallet-control__dot--connected { background: var(--badge-success); }
 .wallet-account { color: var(--ink); font-family: var(--mono-font); }
 
@@ -3093,6 +3069,23 @@ a:focus-visible,
 .inbox-row__subtitle { margin-top: 2px; color: var(--mute); font-size: 10px; line-height: 1.4; overflow-wrap: anywhere; }
 .inbox-row__dot { width: 6px; height: 6px; flex: 0 0 auto; border-radius: var(--rounded-full); }
 .inbox-row__shortcut { padding: 1px 4px; border-radius: var(--rounded-xs); background: var(--bone); color: var(--ash); font-family: var(--mono-font); font-size: 9px; }
+
+.application-history > .dashboard-secondary-button {
+  min-height: 44px;
+  margin-bottom: 16px;
+  max-width: 100%;
+  white-space: normal;
+}
+
+.application-history .inbox-row { align-items: flex-start; }
+.application-history .inbox-row__title { font-size: 14px; overflow-wrap: anywhere; }
+.application-history .inbox-row__subtitle { font-size: 13px; line-height: 1.6; }
+.application-history .dashboard-row-status { color: var(--ink); font-family: inherit; font-size: 13px; }
+
+@media (max-width: 480px) {
+  .application-history .inbox-row { flex-direction: column; gap: 8px; }
+  .application-history .inbox-row__main { width: 100%; }
+}
 
 .tx-link {
   display: inline-flex;
@@ -3259,11 +3252,6 @@ a:focus-visible,
 
   .dashboard-summary-grid > .dashboard-metric {
     min-height: 100px;
-  }
-
-  .wallet-mode__label,
-  .wallet-mode .demo-tag {
-    display: none;
   }
 
   .dashboard-inline-stats {

@@ -33,7 +33,7 @@ const adminNavigation = [
 ];
 
 export function AdminPanel() {
-  const { isDemoMode, state: auctionState, bids, approveBorrower, startAuction, finalizeAuction,
+  const { state: auctionState, bids, approveBorrower, startAuction, finalizeAuction,
     decimals, canStart, canFinalize, creditManager, isLoading, error, refresh, progress } = useAuction();
   const { loans, isLoading: loansLoading, error: loansError, refresh: refreshLoans } = useLoanManager();
 
@@ -49,7 +49,7 @@ export function AdminPanel() {
   const [adminStatus, setAdminStatus] = useState(null);
   const [dataStatus, setDataStatus] = useState('loading');
   const { address } = useAccount();
-  useEffect(() => { setStatusMsg(null); }, [isDemoMode, address]);
+  useEffect(() => { setStatusMsg(null); }, [address]);
 
   const loadData = useCallback(async () => {
     setDataStatus('loading');
@@ -67,9 +67,8 @@ export function AdminPanel() {
   }, []);
 
   useEffect(() => {
-    if (!isDemoMode) loadData();
-    else { setApplications([]); setAdminStatus(null); setDataStatus('ready'); }
-  }, [isDemoMode, loadData]);
+    loadData();
+  }, [loadData]);
 
   const withProcessing = async (loadingText, action, successText, fallbackText) => {
     setIsProcessing(true);
@@ -94,7 +93,7 @@ export function AdminPanel() {
       `Granted a ${maxPrincipal} mUSDC limit to ${borrowerAddress.slice(0, 8)}...`,
       'Approval failed.'
     );
-    if (completed && !isDemoMode) loadData();
+    if (completed) loadData();
   };
 
   const handleReviewApplication = async (application) => {
@@ -157,7 +156,7 @@ export function AdminPanel() {
       workflowDetail={nextAction.detail}
     >
       <ChainStatus loading={isLoading || loansLoading} error={error || loansError} refresh={() => { refresh(); refreshLoans(); }} progress={progress} />
-      {!isDemoMode && !isLoading && !creditManager && <Notice>Onchain credit approval requires a wallet with CREDIT_MANAGER_ROLE. Auction controls require AUCTION_MANAGER_ROLE.</Notice>}
+      {!isLoading && !creditManager && <Notice>Onchain credit approval requires a wallet with CREDIT_MANAGER_ROLE. Auction controls require AUCTION_MANAGER_ROLE.</Notice>}
       {statusMsg && <Notice type={statusMsg.type}>{statusMsg.text}</Notice>}
 
       {activeSection === 'overview' && (
@@ -166,10 +165,10 @@ export function AdminPanel() {
             eyebrow="Credit operations"
             title="Platform overview"
             description="A concise view of the review queue, auction lifecycle, active loan book, and next operational action."
-            chipType={isDemoMode ? 'simulated' : 'onchain'}
+            chipType="onchain"
           />
 
-          {adminStatus && !isDemoMode && (
+          {adminStatus && (
             <Notice>Admin signer {adminStatus.adminAddress} · {adminStatus.balanceBnb} BNB · Chain ID {adminStatus.chainId}</Notice>
           )}
 
@@ -217,7 +216,7 @@ export function AdminPanel() {
                     <div>
                       <div className="dashboard-application-row__title">
                         <strong>{application.applicant?.displayName || 'Applicant'}</strong>
-                        <DataLabelChip type={application.status === 'APPROVED' ? 'onchain' : application.status === 'REJECTED' ? 'simulated' : 'pending'} label={application.status} />
+                        <DataLabelChip type={application.status === 'APPROVED' ? 'onchain' : application.status === 'REJECTED' ? 'offchain' : 'pending'} label={application.status} />
                       </div>
                       <p>{application.applicant?.walletAddress}</p>
                       <small>Property: {application.propertyHash} · Requested {formatUnits(BigInt(application.requestedAmount), 6)} mUSDC at {application.requestedRate / 100}%</small>
@@ -254,7 +253,7 @@ export function AdminPanel() {
 
       {activeSection === 'auction' && (
         <>
-          <PageIntro eyebrow="Market operations" title="Auction control" description="Configure and advance the existing commit-reveal auction lifecycle." chipType={isDemoMode ? 'simulated' : 'onchain'} chipLabel={`State: ${auctionState}`} />
+          <PageIntro eyebrow="Market operations" title="Auction control" description="Configure and advance the existing commit-reveal auction lifecycle." chipType="onchain" chipLabel={`State: ${auctionState}`} />
           <div className="dashboard-split">
             <Panel title="Phase configuration" description="Durations are submitted in seconds when a new cycle starts.">
               <div className="dashboard-form-grid dashboard-form-grid--two">
@@ -273,14 +272,14 @@ export function AdminPanel() {
 
       {activeSection === 'bids' && (
         <>
-          <PageIntro eyebrow="Market operations" title="Bid monitoring" description="Monitor commitments and revealed terms for the current auction." chipType={isDemoMode ? 'simulated' : 'onchain'} />
+          <PageIntro eyebrow="Market operations" title="Bid monitoring" description="Monitor commitments and revealed terms for the current auction." chipType="onchain" />
           <Panel title="Bid evaluation queue" description="Revealed bids read directly from the current auction. Sealed commitments are not enumerable in this contract.">
             {isLoading || error ? <p>Waiting for auction data.</p> : bids.length === 0 ? (
               <EmptyState title="No revealed bids" detail="Bid terms appear here after a borrower reveals them onchain." />
             ) : (
               <div className="dashboard-row-list">
                 {bids.map((bid, index) => (
-                  <InboxRow key={`${bid.borrower}-${index}`} statusDotColor="var(--primary)" title={`${bid.borrower.slice(0, 10)}... · $${bid.amount} at ${bid.rate}% APR`} subtitle={`Property: ${bid.property} · Term: ${bid.term} months`} dataType={isDemoMode ? 'simulated' : 'onchain'} customRight={<span className="dashboard-row-status">{bid.status}</span>} />
+                  <InboxRow key={`${bid.borrower}-${index}`} statusDotColor="var(--primary)" title={`${bid.borrower.slice(0, 10)}... · $${bid.amount} at ${bid.rate}% APR`} subtitle={`Property: ${bid.property} · Term: ${bid.term} months`} dataType="onchain" customRight={<span className="dashboard-row-status">{bid.status}</span>} />
                 ))}
               </div>
             )}
@@ -290,14 +289,14 @@ export function AdminPanel() {
 
       {activeSection === 'loans' && (
         <>
-          <PageIntro eyebrow="Market operations" title="Loan monitoring" description="Track loans created after auction allocation without changing servicing logic." chipType={isDemoMode ? 'simulated' : 'onchain'} />
+          <PageIntro eyebrow="Market operations" title="Loan monitoring" description="Track loans created after auction allocation without changing servicing logic." chipType="onchain" />
           <Panel title="Active loan book" description="Principal, borrower, pricing, and maturity for monitored loans.">
             {loansLoading || loansError ? <p>Waiting for loan data.</p> : activeLoans.length === 0 ? (
               <EmptyState title="No active loans" detail="Loans will appear here when an auction allocation creates them." />
             ) : (
               <div className="dashboard-row-list">
                 {activeLoans.map((loan) => (
-                  <InboxRow key={loan.id} statusDotColor="var(--badge-success)" title={`Loan #${loan.id} · ${loan.borrower.slice(0, 10)}...`} subtitle={`Principal $${loan.principal} · ${loan.rate}% APR · ${loan.term} months`} dataType={isDemoMode ? 'simulated' : 'onchain'} customRight={<span className="dashboard-row-status">{loan.maturityDate ? `Matures ${loan.maturityDate}` : 'Maturity not recorded'}</span>} />
+                  <InboxRow key={loan.id} statusDotColor="var(--badge-success)" title={`Loan #${loan.id} · ${loan.borrower.slice(0, 10)}...`} subtitle={`Principal $${loan.principal} · ${loan.rate}% APR · ${loan.term} months`} dataType="onchain" customRight={<span className="dashboard-row-status">{loan.maturityDate ? `Matures ${loan.maturityDate}` : 'Maturity not recorded'}</span>} />
                 ))}
               </div>
             )}

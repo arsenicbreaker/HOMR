@@ -27,7 +27,6 @@ const investorNavigation = [
 
 export function InvestorDashboard() {
   const {
-    isDemoMode,
     tvl,
     sharePrice,
     deployedCapital,
@@ -47,7 +46,7 @@ export function InvestorDashboard() {
   const [statusMsg, setStatusMsg] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const { address } = useAccount();
-  useEffect(() => { setStatusMsg(null); }, [isDemoMode, address]);
+  useEffect(() => { setStatusMsg(null); }, [address]);
 
   const handleDepositSubmit = async (event) => {
     event.preventDefault();
@@ -110,24 +109,24 @@ export function InvestorDashboard() {
             eyebrow="Investor workspace"
             title="Portfolio overview"
             description="Your vault position, capital allocation, and the next action that needs attention."
-            chipType={isDemoMode ? 'simulated' : 'onchain'}
+            chipType="onchain"
           />
 
           <SummaryGrid>
             <PrimarySummary eyebrow="Your portfolio" value={money(userDeposited)} unit="mUSDC invested" detail={/^\d/.test(String(userShares)) ? `${userShares} hvSHARE at $${sharePrice} per share` : 'Connect a wallet to read your vault position.'} />
             <Metric label="Available capital" value={money(availableCapital)} unit="USDC in vault" tone="success" />
             <Metric label="Active positions" value={loanDataUnavailable ? 'Unavailable' : activeLoans.length} unit="funded loans" />
-            <Metric label="Projected APY" value={estimatedApy} unit={isDemoMode ? 'demo estimate' : 'Contract does not accrue interest'} tone="warning" />
+            <Metric label="Projected APY" value={estimatedApy} unit="Contract does not accrue interest" tone="warning" />
           </SummaryGrid>
 
           <div className="dashboard-split dashboard-split--wide">
-            <Panel title="Active portfolio" description="The loans currently carrying deployed vault capital." chipType={isDemoMode ? 'simulated' : 'onchain'}>
+            <Panel title="Active portfolio" description="The loans currently carrying deployed vault capital." chipType="onchain">
               {loanDataUnavailable ? <p>Waiting for loan data.</p> : activeLoans.length === 0 ? (
                 <EmptyState title="No active investments" detail="Funded loans will appear after an auction is finalized." />
               ) : (
                 <div className="dashboard-row-list">
                   {activeLoans.slice(0, 3).map((loan) => (
-                    <InboxRow key={loan.id} statusDotColor="var(--badge-success)" title={`Loan #${loan.id} · $${loan.principal}`} subtitle={`${loan.rate}% APR · ${loan.term} months`} dataType={isDemoMode ? 'simulated' : 'onchain'} customRight={<span className="dashboard-row-status">{loan.maturityDate || 'Maturity not recorded'}</span>} />
+                    <InboxRow key={loan.id} statusDotColor="var(--badge-success)" title={`Loan #${loan.id} · $${loan.principal}`} subtitle={`${loan.rate}% APR · ${loan.term} months`} dataType="onchain" customRight={<span className="dashboard-row-status">{loan.maturityDate || 'Maturity not recorded'}</span>} />
                   ))}
                 </div>
               )}
@@ -157,7 +156,7 @@ export function InvestorDashboard() {
             eyebrow="Portfolio / capital"
             title="Capital actions"
             description="Deposit mUSDC into the vault or redeem the shares already in your wallet."
-            chipType={isDemoMode ? 'simulated' : 'onchain'}
+            chipType="onchain"
           />
 
           <div className="dashboard-split">
@@ -203,7 +202,7 @@ export function InvestorDashboard() {
             eyebrow="Investments"
             title="Active investments"
             description="Loans currently funded by the shared housing credit vault."
-            chipType={isDemoMode ? 'simulated' : 'onchain'}
+            chipType="onchain"
           />
           <Panel title="Funded loan portfolio" description="Active principal, rate, term, and maturity status.">
             {loanDataUnavailable ? <p>Waiting for loan data.</p> : activeLoans.length === 0 ? (
@@ -216,7 +215,7 @@ export function InvestorDashboard() {
                     statusDotColor="var(--badge-success)"
                     title={`Loan #${loan.id} · ${loan.borrower.slice(0, 8)}...`}
                     subtitle={`Principal $${loan.principal} · ${loan.rate}% APR · ${loan.term} months`}
-                    dataType={isDemoMode ? 'simulated' : 'onchain'}
+                    dataType="onchain"
                     customRight={<span className="dashboard-row-status">{loan.maturityDate ? `Matures ${loan.maturityDate}` : 'Maturity not recorded'}</span>}
                   />
                 ))}

@@ -47,7 +47,7 @@ export function StickyScroll({ content, activeId, onActiveChange, children }) {
 
   return (
     <div className={`sticky-scroll${compact ? ' sticky-scroll--compact' : ''}`}>
-      <div className="sticky-scroll-tabs" role="tablist" aria-label="Choose a demo journey" onKeyDown={handleKeys}>
+      <div className="sticky-scroll-tabs" role="tablist" aria-label="Choose a journey" onKeyDown={handleKeys}>
         {content.map((item, index) => (
           <button
             key={item.id}

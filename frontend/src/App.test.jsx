@@ -21,8 +21,7 @@ describe('HOMR landing page interactions', () => {
     const user = userEvent.setup();
     render(<MemoryRouter><App /></MemoryRouter>);
 
-    // The topbar and hero both expose a "Start demo" button; pick the topbar one.
-    const ctaButtons = screen.getAllByRole('button', { name: 'Start demo' });
+    const ctaButtons = screen.getAllByRole('button', { name: 'Open dashboard' });
     await user.click(ctaButtons[0]);
     expect(screen.getByRole('dialog')).toBeTruthy();
 
@@ -30,11 +29,11 @@ describe('HOMR landing page interactions', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
-  it('chooses the borrower demo and updates its journey', async () => {
+  it('chooses the borrower dashboard and updates its journey', async () => {
     const user = userEvent.setup();
     render(<MemoryRouter><App /></MemoryRouter>);
 
-    await user.click(screen.getAllByRole('button', { name: 'Start demo' })[0]);
+    await user.click(screen.getAllByRole('button', { name: 'Open dashboard' })[0]);
     await user.click(screen.getByRole('button', { name: /Borrower/ }));
 
     expect(screen.getByText('Get approved')).toBeTruthy();
@@ -46,7 +45,7 @@ describe('HOMR landing page interactions', () => {
     const user = userEvent.setup();
     render(<MemoryRouter><App /></MemoryRouter>);
 
-    const tablist = screen.getByRole('tablist', { name: 'Choose a demo journey' });
+    const tablist = screen.getByRole('tablist', { name: 'Choose a journey' });
     const borrowerTab = within(tablist).getByRole('tab', { name: /Borrower/ });
     await user.click(borrowerTab);
     expect(borrowerTab.getAttribute('aria-selected')).toBe('true');

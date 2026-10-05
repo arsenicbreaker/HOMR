@@ -3,7 +3,6 @@ import React from 'react';
 const defaultLabels = {
   onchain: 'Onchain',
   offchain: 'Verified offchain',
-  simulated: 'Simulated',
   pending: 'Pending review'
 };
 
