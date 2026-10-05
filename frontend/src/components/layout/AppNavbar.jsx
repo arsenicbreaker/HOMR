@@ -29,7 +29,6 @@ export function AppNavbar({ roleLabel, menuOpen, onMenuToggle }) {
 
       <div className="dashboard-topbar__actions">
         <Link to="/faucet" className="dashboard-faucet-link">Faucet</Link>
-        <Link to="/" className="dashboard-back-link">Landing page</Link>
         <WalletConnectButton />
       </div>
     </header>
