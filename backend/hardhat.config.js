@@ -1,5 +1,6 @@
 import "dotenv/config";
 import "@nomicfoundation/hardhat-toolbox";
+import "@nomicfoundation/hardhat-verify";
 
 // === Validasi env di awal — error jelas sebelum compile/deploy ===
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
@@ -59,10 +60,20 @@ export default {
     artifacts: "./artifacts",
   },
 
-  // Untuk verify kontrak di BscScan (opsional, butuh API key)
-  etherscan: {
+ 
+    etherscan: {
     apiKey: {
       bscTestnet: process.env.BSCSCAN_API_KEY || "",
     },
+    customChains: [
+      {
+        network: "bscTestnet",
+        chainId: 97,
+        urls: {
+          apiURL: "https://api.etherscan.io/v2/api",
+          browserURL: "https://testnet.bscscan.com"
+        }
+      }
+    ]
   },
 };

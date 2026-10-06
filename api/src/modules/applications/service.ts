@@ -1,8 +1,8 @@
 import { prisma } from "../../db/client.js";
 import { approveBorrower } from "../../chain/signer.js";
-import { publicClient, abis } from '../../chain/contracts.js';
-import { config } from '../../config.js';
-import { applicationAmountToToken } from './units.js';
+import { publicClient, abis } from "../../chain/contracts.js";
+import { config } from "../../config.js";
+import { applicationAmountToToken } from "./units.js";
 
 export interface CreateApplicationInput {
     walletAddress: string;
@@ -75,6 +75,7 @@ export async function reviewApplication(id: string, input: ReviewInput) {
         throw new Error("APPLICATION_ALREADY_REVIEWED");
     }
 
+    // REJECTED → simpan saja, tidak panggil kontrak
     if (input.decision === "REJECTED") {
         return prisma.application.update({
             where: { id },
@@ -93,15 +94,18 @@ export async function reviewApplication(id: string, input: ReviewInput) {
     }
 
     const tokenDecimals = await publicClient.readContract({
-        address: config.addresses.mockUsdc, abi: abis.mockUsdc, functionName: 'decimals',
+        address: config.addresses.mockUsdc,
+        abi: abis.mockUsdc,
+        functionName: "decimals",
     }) as number;
+
     const tx = await approveBorrower(
         application.applicant.walletAddress as `0x${string}`,
         applicationAmountToToken(BigInt(input.maxPrincipal), tokenDecimals),
         application.propertyHash
     );
 
-    return prisma.application.update({
+    const updated = await prisma.application.update({
         where: { id },
         data: {
             status: "APPROVED",
@@ -111,5 +115,25 @@ export async function reviewApplication(id: string, input: ReviewInput) {
             reviewNote: input.reviewNote,
             approvalTxHash: tx.txHash,
         },
+        select: {
+            id: true,
+            applicantId: true,
+            propertyHash: true,
+            requestedAmount: true,
+            requestedRate: true,
+            requestedTerm: true,
+            status: true,
+            maxPrincipal: true,
+            reviewedBy: true,
+            reviewedAt: true,
+            reviewNote: true,
+            approvalTxHash: true,
+            createdAt: true,
+        },
     });
+
+    return {
+        ...updated,
+        approvalTxHash: tx.txHash,
+    };
 }
