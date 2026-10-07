@@ -41,14 +41,13 @@ describe('HOMR landing page interactions', () => {
     expect(window.HTMLElement.prototype.scrollIntoView).toHaveBeenCalled();
   });
 
-  it('switches persona tabs and toggles the mobile menu state', async () => {
+  it('uses scroll-only journeys and toggles the mobile menu state', async () => {
     const user = userEvent.setup();
     render(<MemoryRouter><App /></MemoryRouter>);
 
-    const tablist = screen.getByRole('tablist', { name: 'Choose a journey' });
-    const borrowerTab = within(tablist).getByRole('tab', { name: /Borrower/ });
-    await user.click(borrowerTab);
-    expect(borrowerTab.getAttribute('aria-selected')).toBe('true');
+    expect(screen.queryByRole('tablist', { name: 'Choose a journey' })).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Investor', exact: true })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Borrower', exact: true })).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: 'Menu' }));
     expect(screen.getByRole('button', { name: 'Close' }).getAttribute('aria-expanded')).toBe('true');

@@ -4,43 +4,16 @@
   min-width: 0;
 }
 
-.sticky-scroll-tabs {
-  position: sticky;
-  top: 92px;
-  z-index: 3;
-  display: flex;
-  width: fit-content;
-  padding: 6px;
-  gap: 4px;
-  border: 1px solid var(--divider);
-  border-radius: var(--rounded-sm);
-  background: var(--canvas);
-}
-
-.sticky-scroll-tab {
-  min-height: 44px;
-  padding: 10px 24px;
-  border-radius: var(--rounded-xs);
-  color: #beb8c8;
-  transition: background 180ms, color 180ms;
-}
-
-.sticky-scroll-tab:hover {
-  color: var(--ink);
-  background: var(--card);
-}
-
-.sticky-scroll-tab.is-active {
-  color: var(--on-primary);
-  background: var(--primary);
-}
-
 .sticky-scroll-layout {
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   align-items: start;
   gap: clamp(32px, 6vw, 80px);
-  margin-top: 32px;
+}
+
+.sticky-scroll-track,
+.sticky-scroll-story-body {
+  min-width: 0;
 }
 
 .sticky-scroll-story {
@@ -48,12 +21,12 @@
   align-items: center;
   min-height: 75vh;
   min-height: 75svh;
-  padding: 64px 0;
+  padding: 48px 0;
 }
 
 .sticky-scroll-position {
   margin: 0 0 24px;
-  color: #bcb5c6;
+  color: var(--mute);
   font-size: 14px;
   font-variant-numeric: tabular-nums;
 }
@@ -64,8 +37,8 @@
   font-weight: 540;
   line-height: 1.05;
   letter-spacing: -1.5px;
-  color: #bcb5c6;
-  transition: color 250ms;
+  color: var(--ink);
+  transition: color 400ms ease;
 }
 
 .sticky-scroll-story.is-active .sticky-scroll-title {
@@ -75,40 +48,51 @@
 .sticky-scroll-description {
   max-width: 36ch;
   margin: 24px 0 0;
-  font-size: 18px;
+  font-size: clamp(16px, 1.5vw, 18px);
   line-height: 1.6;
-  color: #c2bccb;
+  color: var(--mute);
 }
 
 .sticky-scroll-preview {
   position: sticky;
-  top: 176px;
-  padding: 32px;
+  top: 120px;
+  min-width: 0;
+  padding: clamp(24px, 3vw, 32px);
   background: var(--card);
   border: 1px solid var(--divider);
   border-radius: var(--rounded-lg);
 }
 
-.sticky-scroll-preview:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 4px;
+.sticky-scroll-preview-panels {
+  display: grid;
 }
 
-.sticky-scroll-preview .section-title {
+.sticky-scroll-preview-panel {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+.sticky-scroll-preview .section-title,
+.sticky-scroll-inline-detail .section-title {
   font-size: clamp(24px, 2.6vw, 36px);
   line-height: 1.15;
+  overflow-wrap: break-word;
 }
 
-.sticky-scroll-preview .journey-steps {
+.sticky-scroll-preview .journey-steps,
+.sticky-scroll-inline-detail .journey-steps {
   margin-top: 28px;
 }
 
-.sticky-scroll-preview .journey-step {
-  grid-template-columns: 24px 1fr;
+.sticky-scroll-preview .journey-step,
+.sticky-scroll-inline-detail .journey-step {
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 16px;
   padding: 18px 0;
 }
 
-.sticky-scroll-preview .journey-step:hover {
+.sticky-scroll-preview .journey-step:hover,
+.sticky-scroll-inline-detail .journey-step:hover {
   background: transparent;
 }
 
@@ -116,7 +100,7 @@
   margin: 24px 0 0;
   font-size: 13px;
   line-height: 1.6;
-  color: #c2bccb;
+  color: var(--mute);
 }
 
 .sticky-scroll-notice strong {
@@ -126,96 +110,8 @@
   font-weight: 500;
 }
 
-@media (max-width: 700px) {
-  .sticky-scroll-tabs {
-    top: 88px;
-  }
-
-  .sticky-scroll-layout {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0;
-  }
-
-  .sticky-scroll-preview {
-    grid-row: 1;
-    top: 154px;
-    z-index: 2;
-    padding: 20px;
-  }
-
-  .sticky-scroll-preview .section-title,
-  .sticky-scroll-notice span {
-    display: none;
-  }
-
-  .sticky-scroll-preview .section-eyebrow {
-    margin: 0;
-    font-family: var(--font-family);
-    font-size: 18px;
-    font-weight: 540;
-    letter-spacing: 0;
-    text-transform: none;
-    color: var(--ink);
-  }
-
-  .sticky-scroll-notice {
-    margin-top: 12px;
-  }
-
-  .sticky-scroll-notice strong {
-    margin: 0;
-  }
-
-  .sticky-scroll-preview .journey-steps {
-    margin-top: 16px;
-  }
-
-  .sticky-scroll-preview .journey-step {
-    min-height: 62px;
-    padding: 10px 0;
-    gap: 12px;
-  }
-
-  .sticky-scroll-preview .journey-step-label {
-    font-size: 14px;
-  }
-
-  .sticky-scroll-story {
-    min-height: 85svh;
-    align-items: end;
-    padding: 64px 0 80px;
-  }
-
-  .sticky-scroll-title {
-    font-size: 48px;
-  }
-}
-
-@media (max-height: 700px) and (min-width: 701px) {
-  .sticky-scroll-preview {
-    top: 156px;
-    padding: 24px;
-  }
-
-  .sticky-scroll-preview .section-title {
-    font-size: 24px;
-  }
-
-  .sticky-scroll-preview .journey-step {
-    padding: 12px 0;
-  }
-}
-
-@media (max-height: 580px) {
-  .sticky-scroll-tabs,
-  .sticky-scroll-preview {
-    position: static;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .sticky-scroll-title,
-  .sticky-scroll-tab {
+  .sticky-scroll-title {
     transition: none;
   }
 }
@@ -226,29 +122,48 @@
 
 .sticky-scroll--compact .sticky-scroll-story {
   min-height: 0;
-  padding: 48px 0;
-  scroll-margin-top: 160px;
+  padding: 40px 0;
+}
+
+.sticky-scroll--compact .sticky-scroll-story:first-child {
+  padding-top: 0;
+}
+
+.sticky-scroll--compact .sticky-scroll-story:last-child {
+  padding-bottom: 0;
+}
+
+.sticky-scroll--compact .sticky-scroll-story + .sticky-scroll-story {
+  border-top: 1px solid var(--divider);
+}
+
+.sticky-scroll--compact .sticky-scroll-story-body {
+  width: 100%;
+}
+
+.sticky-scroll--compact .sticky-scroll-title {
+  font-size: clamp(36px, 7vw, 56px);
+  color: var(--primary);
+}
+
+.sticky-scroll--compact .sticky-scroll-description {
+  max-width: 52ch;
+  margin-top: 20px;
 }
 
 .sticky-scroll-inline-detail {
-  margin-top: 32px;
-  padding: 20px;
+  margin-top: 28px;
+  padding: clamp(20px, 4vw, 32px);
   background: var(--card);
   border: 1px solid var(--divider);
   border-radius: var(--rounded-lg);
 }
 
-.sticky-scroll-inline-detail .section-eyebrow,
-.sticky-scroll-inline-detail .section-title {
+.sticky-scroll-inline-detail .section-eyebrow {
   display: none;
 }
 
-.sticky-scroll-inline-detail .journey-step {
-  grid-template-columns: 24px minmax(0, 1fr);
-  gap: 12px;
-  padding: 16px 0;
-}
-
-.sticky-scroll-inline-detail .journey-step-label {
-  font-size: 14px;
+.sticky-scroll-inline-detail .section-title {
+  margin: 0;
+  font-size: clamp(24px, 4vw, 32px);
 }
