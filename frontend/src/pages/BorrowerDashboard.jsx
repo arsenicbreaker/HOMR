@@ -58,6 +58,7 @@ export function BorrowerDashboard() {
   const applicationWallet = address ? address.toLowerCase() : null;
   const applications = applicationWallet && applicationHistory.wallet === applicationWallet ? applicationHistory.items : [];
   const applicationsStatus = !applicationWallet ? 'idle' : applicationHistory.wallet === applicationWallet ? applicationHistory.status : 'loading';
+  const applicationsError = applicationHistory.wallet === applicationWallet ? applicationHistory.error : '';
   const refreshApplications = () => setApplicationRevision((revision) => revision + 1);
   const bidStorageKey = address && commitDeadline
     ? `homr-bid:${CHAIN_CONFIG.chainId}:${CONTRACT_ADDRESSES.CreditAuction.toLowerCase()}:${address.toLowerCase()}:${commitDeadline}` : null;
@@ -93,8 +94,8 @@ export function BorrowerDashboard() {
         .filter((application) => application.applicant?.walletAddress?.toLowerCase() === applicationWallet)
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       if (!cancelled) setApplicationHistory({ wallet: applicationWallet, items, status: 'ready' });
-    }).catch(() => {
-      if (!cancelled) setApplicationHistory((previous) => ({ ...previous, status: 'error' }));
+    }).catch((error) => {
+      if (!cancelled) setApplicationHistory((previous) => ({ ...previous, status: 'error', error: error.message }));
     });
     return () => { cancelled = true; };
   }, [applicationWallet, applicationRevision]);
@@ -288,7 +289,7 @@ export function BorrowerDashboard() {
               </form>
             </Panel>
           )}
-          <ApplicationHistory applications={applications} status={applicationsStatus} address={address} onRefresh={refreshApplications} />
+          <ApplicationHistory applications={applications} status={applicationsStatus} error={applicationsError} address={address} onRefresh={refreshApplications} />
         </>
       )}
 
@@ -376,7 +377,7 @@ export function BorrowerDashboard() {
       {activeSection === 'activity' && (
         <>
           <PageIntro eyebrow="Records" title="Activity & proof" description="Approval, auction, and repayment events associated with the financing workflow." />
-          <ApplicationHistory applications={applications} status={applicationsStatus} address={address} onRefresh={refreshApplications} />
+          <ApplicationHistory applications={applications} status={applicationsStatus} error={applicationsError} address={address} onRefresh={refreshApplications} />
           <TransparencyLedger embedded />
         </>
       )}

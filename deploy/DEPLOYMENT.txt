@@ -1,0 +1,33 @@
+HOMR deployment repair
+
+The API and faucet are separate services. Deploying frontend/ to Vercel does not
+restart either VPS service.
+
+API (api/ on VPS):
+1. Update source to this version.
+2. Keep the existing secrets in api/.env. Set:
+   CORS_ORIGIN=https://homr.web.id,https://www.homr.web.id
+3. Run npm ci, npm run prisma:generate, npm run build, and npm test.
+4. Restart the existing API process using its current process manager.
+   Do not start a second API on port 4000.
+
+Frontend (Vercel root directory: frontend):
+VITE_API_BASE=https://api.homr.web.id
+VITE_FAUCET_API_BASE=https://api.homr.web.id/faucet
+Redeploy after changing build environment variables.
+
+Faucet (backend/faucet/ on VPS):
+1. Configure backend/faucet/.env using .env.example. Keep FAUCET_PRIVATE_KEY
+   on the VPS. Use a dedicated funded BNB Testnet wallet.
+2. Set FAUCET_ALLOWED_ORIGINS=https://homr.web.id,https://www.homr.web.id
+3. Run npm ci and start/restart the service on port 3001 with the existing
+   process manager.
+4. Include deploy/nginx-faucet.conf inside the existing api.homr.web.id HTTPS
+   server block. Validate with nginx -t before reloading Nginx.
+
+Verify from the repository root:
+node deploy/production-check.mjs
+
+The check only reads data and sends OPTIONS preflights. It does not create
+applications, review requests, claim tokens, or send blockchain transactions.
+Onchain write flows are covered by the local contract integration tests.

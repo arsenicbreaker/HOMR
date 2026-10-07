@@ -8,7 +8,9 @@ dotenv.config();
 const app = express();
 
 // Local Vite ports may change; deployed origins must be listed explicitly.
-const allowedOrigins = (process.env.FAUCET_ALLOWED_ORIGINS || '').split(',').map((origin) => origin.trim()).filter(Boolean);
+const allowedOrigins = ['https://homr.web.id', 'https://www.homr.web.id',
+    ...(process.env.FAUCET_ALLOWED_ORIGINS || '').split(',')]
+    .map((origin) => origin.trim().replace(/\/+$/, '')).filter(Boolean);
 const isLocalOrigin = (origin) => /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
 app.use(cors({
     origin: function (origin, callback) {

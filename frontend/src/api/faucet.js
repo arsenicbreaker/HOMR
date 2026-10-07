@@ -1,14 +1,18 @@
-export const FAUCET_API_BASE = (import.meta.env.VITE_FAUCET_API_BASE || 'http://localhost:3001').replace(/\/$/, '');
+import { FAUCET_API_BASE } from './endpoints';
+export { FAUCET_API_BASE } from './endpoints';
 
 async function faucetRequest(path, options) {
   let response;
   try {
     response = await fetch(`${FAUCET_API_BASE}${path}`, options);
   } catch {
-    throw new Error(`Cannot connect to the faucet at ${FAUCET_API_BASE}. Check that the faucet service is running.`);
+    throw new Error(import.meta.env.DEV
+      ? `Cannot connect to the faucet at ${FAUCET_API_BASE}. Check that the faucet service is running.`
+      : 'The faucet is temporarily unavailable. Please try again later.');
   }
 
   const data = await response.json().catch(() => null);
+  if (!data) throw new Error('The faucet service returned an invalid response. Please try again later.');
   if (!response.ok || !data?.success) {
     throw new Error(data?.error || `Faucet request failed (HTTP ${response.status}).`);
   }

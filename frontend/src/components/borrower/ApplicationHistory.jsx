@@ -5,7 +5,7 @@ import InboxRow from '../ui/InboxRow';
 
 const statusLabels = { PENDING: 'Pending review', APPROVED: 'Approved', REJECTED: 'Rejected' };
 
-export default function ApplicationHistory({ applications, status, address, onRefresh }) {
+export default function ApplicationHistory({ applications, status, error, address, onRefresh }) {
   return (
     <Panel className="application-history" title="Application history" description="Financing requests submitted by your connected wallet, newest first." chipType="offchain" chipLabel="Credit database">
       {!address ? (
@@ -14,7 +14,7 @@ export default function ApplicationHistory({ applications, status, address, onRe
         <>
           <button className="dashboard-secondary-button" type="button" onClick={onRefresh} disabled={status === 'loading'}>Refresh application history</button>
           {status === 'loading' && <Notice>Loading application history...</Notice>}
-          {status === 'error' && <Notice type="error">Could not load application history. Try refreshing it. Any requests shown below are from the last successful load.</Notice>}
+          {status === 'error' && <Notice type="error">Could not load application history. {error || 'Try refreshing it.'}{applications.length > 0 && ' Requests shown below are from the last successful load.'}</Notice>}
           {status === 'ready' && applications.length === 0 && <EmptyState title="No applications submitted" detail="Submit a financing application to start your credit review." />}
           {applications.length > 0 && <div className="dashboard-row-list">
             {applications.map((application) => (

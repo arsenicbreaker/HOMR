@@ -134,10 +134,12 @@ describe('borrower application history', () => {
   });
 
   it('shows a retryable load error instead of claiming there are no applications', async () => {
-    fetchApplications.mockRejectedValueOnce(new Error('offline'));
+    fetchApplications.mockRejectedValueOnce(new Error('Cannot reach the application service.'));
     render(wrap(<BorrowerDashboard />));
     openProperty();
     expect(await screen.findByRole('alert')).toBeTruthy();
+    expect(screen.getByRole('alert').textContent).toContain('Cannot reach the application service.');
+    expect(screen.getByRole('alert').textContent).not.toContain('last successful load');
     expect(screen.queryByText('No applications submitted')).toBeNull();
     fetchApplications.mockResolvedValue({ applications: [savedApplication({ status: 'APPROVED' })] });
     fireEvent.click(screen.getByRole('button', { name: 'Refresh application history' }));

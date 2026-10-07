@@ -45,7 +45,7 @@ export function FaucetPage() {
   const validAddress = isAddress(targetAddress);
   const wrongChain = isConnected && chainId !== FAUCET_CHAIN_ID;
   const canClaim = validAddress && infoState === 'ready' && !wrongChain && !claiming;
-  const serviceOffline = infoError.startsWith('Cannot connect to the faucet');
+  const serviceOffline = import.meta.env.DEV && infoError.startsWith('Cannot connect to the faucet');
 
   async function handleClaim(token) {
     if (!canClaim) return;

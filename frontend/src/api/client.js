@@ -1,4 +1,5 @@
-export const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000';
+import { API_BASE } from './endpoints';
+export { API_BASE } from './endpoints';
 export const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_API_KEY || 'dev-admin-key-change-me';
 
 const headers = {
@@ -36,9 +37,18 @@ export async function fetchEvents(limit = 50) {
 }
 
 export async function fetchApplications() {
-  const res = await fetch(`${API_BASE}/api/applications`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/api/applications`);
+  } catch {
+    throw new Error('Cannot reach the application service. Please try again once the connection is restored.');
+  }
+  if (!res.ok) throw new Error(`The application service is unavailable (HTTP ${res.status}). Please try again later.`);
+  const data = await res.json().catch(() => null);
+  if (!Array.isArray(data?.applications)) {
+    throw new Error('The application service returned an invalid response. Please try again later.');
+  }
+  return data;
 }
 
 export async function createApplication(data) {

@@ -1,5 +1,4 @@
 import Fastify from "fastify";
-import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import { config } from "./config.js";
 import { logger } from "./lib/logger.js";
@@ -9,6 +8,7 @@ import { adminRoutes } from "./routes/admin.js";
 import { applicationRoutes } from "./modules/applications/routes.js";
 import { auctionRoutes } from "./modules/auctions/routes.js";
 import { startIndexer } from "./chain/indexer.js";
+import { registerCors } from "./lib/cors.js";
 
 // === BigInt JSON patch ===
 // Prisma mengembalikan BigInt untuk kolom decimal/bigint.
@@ -21,11 +21,7 @@ const app = Fastify({ logger: false, trustProxy: true });
 
 await app.register(helmet);
 
-// CORS: split string jadi array supaya fastify-cors kirim header benar
-const allowedOrigins = config.CORS_ORIGIN.split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-await app.register(cors, { origin: allowedOrigins, credentials: true });
+await registerCors(app, config.CORS_ORIGIN);
 
 await app.register(healthRoutes);
 await app.register(publicRoutes, { prefix: "/api" });
