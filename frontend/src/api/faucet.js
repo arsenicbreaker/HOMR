@@ -6,9 +6,7 @@ async function faucetRequest(path, options) {
   try {
     response = await fetch(`${FAUCET_API_BASE}${path}`, options);
   } catch {
-    throw new Error(import.meta.env.DEV
-      ? `Cannot connect to the faucet at ${FAUCET_API_BASE}. Check that the faucet service is running.`
-      : 'The faucet is temporarily unavailable. Please try again later.');
+    throw new Error('The faucet is temporarily unavailable. Please try again later.');
   }
 
   const data = await response.json().catch(() => null);
@@ -21,7 +19,7 @@ async function faucetRequest(path, options) {
 
 export async function fetchFaucetInfo() {
   const info = await faucetRequest('/api/info');
-  if (typeof info.dripBnb !== 'string' || typeof info.dripUsdc !== 'string') {
+  if (typeof info.dripUsdc !== 'string') {
     throw new Error('The faucet server must be updated before tokens can be claimed.');
   }
   return info;

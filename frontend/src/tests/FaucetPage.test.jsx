@@ -39,6 +39,7 @@ describe('faucet page', () => {
     renderPage();
 
     await screen.findByText('Faucet ready');
+    expect(screen.queryByRole('button', { name: 'Claim BNB testnet' })).toBeNull();
     fireEvent.change(screen.getByLabelText('Wallet address'), { target: { value: target } });
     await user.click(screen.getByRole('button', { name: 'Claim mUSDC' }));
 
@@ -48,16 +49,16 @@ describe('faucet page', () => {
   });
 
   it('keeps claims disabled while the service is unavailable and recovers on retry', async () => {
-    fetchFaucetInfo.mockRejectedValueOnce(new Error('The local faucet server is unavailable.')).mockResolvedValue(info);
+    fetchFaucetInfo.mockRejectedValueOnce(new Error('The faucet is temporarily unavailable. Please try again later.')).mockResolvedValue(info);
     const user = userEvent.setup();
     renderPage();
 
-    expect(await screen.findByText('The local faucet server is unavailable.')).toBeTruthy();
+    expect(await screen.findByText('The faucet is temporarily unavailable. Please try again later.')).toBeTruthy();
     fireEvent.change(screen.getByLabelText('Wallet address'), { target: { value: target } });
-    expect(screen.getByRole('button', { name: 'Claim BNB testnet' }).disabled).toBe(true);
+    expect(screen.getByRole('button', { name: 'Claim mUSDC' }).disabled).toBe(true);
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     await screen.findByText('Faucet ready');
-    expect(screen.getByRole('button', { name: 'Claim BNB testnet' }).disabled).toBe(false);
+    expect(screen.getByRole('button', { name: 'Claim mUSDC' }).disabled).toBe(false);
   });
 
   it('asks a connected wallet on another chain to switch before claiming', async () => {

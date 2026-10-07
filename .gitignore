@@ -59,6 +59,7 @@ Thumbs.db
 coverage/
 .cache/
 backend/faucet/.env
+backend/faucet/data/
 
 # Local Markdown documentation
 *.[mM][dD]

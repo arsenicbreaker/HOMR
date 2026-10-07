@@ -7,7 +7,6 @@ import './faucet.css';
 
 const FAUCET_CHAIN_ID = 97;
 const tokens = [
-  { id: 'bnb', label: 'BNB testnet', kind: 'TRANSACTION GAS', detail: 'Pay transaction fees when trying onchain features.', amountKey: 'dripBnb', suffix: 'BNB' },
   { id: 'usdc', label: 'mUSDC', kind: 'TEST TOKEN', detail: 'Try depositing into the Housing Credit Vault.', amountKey: 'dripUsdc', suffix: 'mUSDC' }
 ];
 
@@ -20,7 +19,7 @@ export function FaucetPage() {
   const [infoState, setInfoState] = useState('loading');
   const [infoError, setInfoError] = useState('');
   const [claiming, setClaiming] = useState(null);
-  const [results, setResults] = useState({ bnb: null, usdc: null });
+  const [results, setResults] = useState({ usdc: null });
 
   useEffect(() => {
     if (address) setTargetAddress(address);
@@ -45,7 +44,6 @@ export function FaucetPage() {
   const validAddress = isAddress(targetAddress);
   const wrongChain = isConnected && chainId !== FAUCET_CHAIN_ID;
   const canClaim = validAddress && infoState === 'ready' && !wrongChain && !claiming;
-  const serviceOffline = import.meta.env.DEV && infoError.startsWith('Cannot connect to the faucet');
 
   async function handleClaim(token) {
     if (!canClaim) return;
@@ -64,7 +62,7 @@ export function FaucetPage() {
 
   function updateAddress(value) {
     setTargetAddress(value.trim());
-    setResults({ bnb: null, usdc: null });
+    setResults({ usdc: null });
   }
 
   return (
@@ -88,7 +86,7 @@ export function FaucetPage() {
             <span className="hero-network-brand"><img src="/brand/bnb-chain-symbol.svg" width="22" height="22" alt="" /><strong>BNB Chain Testnet</strong></span>
           </div>
           <h1 id="faucet-title">Test tokens to <span className="hero-highlight">use HOMR.</span></h1>
-          <p>Get BNB for transaction fees and mUSDC to try depositing into the HOMR vault. These tokens work only on testnet.</p>
+          <p>Get mUSDC to try depositing into the HOMR vault. This token works only on testnet.</p>
           <span className="faucet-intro__note">BNB CHAIN TESTNET <span aria-hidden="true">·</span> CHAIN ID 97 <span aria-hidden="true">·</span> NO MONETARY VALUE</span>
         </section>
 
@@ -155,8 +153,8 @@ export function FaucetPage() {
             <div className="faucet-panel-index">02 <span>/</span> CLAIM TEST TOKENS</div>
             <div className="faucet-claim-heading">
               <div>
-                <h2 id="faucet-claim-title">Choose a test token.</h2>
-                <p>Each address can claim each token once per hour.</p>
+                <h2 id="faucet-claim-title">Claim test mUSDC.</h2>
+                <p>Each address can claim mUSDC once per hour.</p>
               </div>
               <span className={`faucet-service-state is-${infoState}`} role="status">
                 <span aria-hidden="true" />{infoState === 'ready' ? 'Faucet ready' : infoState === 'loading' ? 'Checking faucet' : 'Server unavailable'}
@@ -166,16 +164,8 @@ export function FaucetPage() {
             {infoState === 'error' && (
               <div className="faucet-service-error" role="alert">
                 <div>
-                  <strong>{serviceOffline ? 'Local service is not running' : 'Faucet is not ready'}</strong>
+                  <strong>Faucet temporarily unavailable</strong>
                   <p>{infoError}</p>
-                  {serviceOffline && <details>
-                    <summary>How to start the local faucet</summary>
-                    <ol>
-                      <li>In <code>backend/faucet</code>, copy <code>.env.example</code> to <code>.env</code>.</li>
-                      <li>Set <code>FAUCET_PRIVATE_KEY</code> to the private key of a dedicated testnet wallet with enough BNB for claims and minting fees.</li>
-                      <li>Run <code>npm install</code>, then <code>npm start</code>.</li>
-                    </ol>
-                  </details>}
                 </div>
                 <button type="button" onClick={loadInfo}>Try again</button>
               </div>
@@ -186,7 +176,7 @@ export function FaucetPage() {
                 const result = results[token.id];
                 return (
                   <article className="faucet-token" key={token.id}>
-                    <div className="faucet-token__symbol" aria-hidden="true">{token.id === 'bnb' ? <img src="/brand/bnb-chain-symbol.svg" width="26" height="26" alt="" /> : '$'}</div>
+                    <div className="faucet-token__symbol" aria-hidden="true">$</div>
                     <div className="faucet-token__body">
                       <div className="faucet-token__top"><span>{token.kind}</span><strong>{info ? `${info[token.amountKey]} ${token.suffix}` : 'Waiting for data'}</strong></div>
                       <h3>{token.label}</h3>

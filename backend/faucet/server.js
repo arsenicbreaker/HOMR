@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import { ethers } from 'ethers';
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'node:url';
+import { ClaimError, COOLDOWN_MS, createClaimLimiter } from './claim-limiter.js';
 
 dotenv.config();
 
@@ -22,7 +24,7 @@ app.use(cors({
     },
     credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '2kb' }));
 
 // 2. Setup Provider & Wallet (BNB Smart Chain Testnet)
 const provider = new ethers.JsonRpcProvider(process.env.BSC_RPC_URL);
@@ -56,22 +58,26 @@ async function ensureTestnet() {
     if (network.chainId !== 97n) throw new Error('Faucet RPC must use BNB Chain Testnet (97).');
 }
 
-// Rate Limiting (In-Memory)
-const claimHistory = new Map();
-const COOLDOWN_MS = 60 * 60 * 1000; // 1 Jam
+const claimLimiter = await createClaimLimiter({
+    stateFile: process.env.FAUCET_STATE_FILE || fileURLToPath(new URL('./data/claims.json', import.meta.url)),
+    maxClaimsPerHour: Number(process.env.FAUCET_MAX_CLAIMS_PER_HOUR || 60),
+});
 
 // Helper: Validasi Alamat
 function isValidAddress(address) {
-    try { ethers.getAddress(address); return true; } catch { return false; }
+    try { return ethers.getAddress(address) !== ethers.ZeroAddress; } catch { return false; }
 }
 
 // ==========================================
 // ENDPOINT 1: Info Saldo Faucet
 // ==========================================
-app.get('/api/info', async (req, res) => {
+app.get(['/api/info', '/faucet/api/info'], async (req, res) => {
     try {
         await ensureTestnet();
         const bnbBalance = await provider.getBalance(wallet.address);
+        if (bnbBalance === 0n) {
+            return res.status(503).json({ success: false, wallet: wallet.address, error: 'The faucet is waiting for testnet BNB funding. Please try again later.' });
+        }
         const usdcBalance = await usdcContract.balanceOf(wallet.address);
         const tokenDecimals = await getTokenDecimals();
         
@@ -94,30 +100,23 @@ app.get('/api/info', async (req, res) => {
 // ==========================================
 // ENDPOINT 2: Klaim BNB (Native Token)
 // ==========================================
-app.post('/api/claim-bnb', async (req, res) => {
+app.post(['/api/claim-bnb', '/faucet/api/claim-bnb'], async (req, res) => {
     try {
-        await ensureTestnet();
-        const { address } = req.body;
+        const { address } = req.body || {};
         if (!address || !isValidAddress(address)) return res.status(400).json({ success: false, error: "Invalid address" });
         
         const targetAddr = ethers.getAddress(address);
         const historyKey = targetAddr.toLowerCase() + '_bnb';
         
-        // Cek Rate Limit
-        const lastClaim = claimHistory.get(historyKey);
-        if (lastClaim && (Date.now() - lastClaim < COOLDOWN_MS)) {
-            return res.status(429).json({ success: false, error: "Wait 1 hour before claiming BNB again" });
-        }
-
-        // Cek Saldo
-        const balance = await provider.getBalance(wallet.address);
-        if (balance < DRIP_BNB) return res.status(503).json({ success: false, error: "The faucet has run out of BNB!" });
-
-        // Kirim BNB
-        const tx = await wallet.sendTransaction({ to: targetAddr, value: DRIP_BNB });
-        await tx.wait();
-
-        claimHistory.set(historyKey, Date.now());
+        const tx = await claimLimiter.run(historyKey, async () => {
+            await ensureTestnet();
+            const balance = await provider.getBalance(wallet.address);
+            if (balance <= DRIP_BNB) throw new ClaimError(503, 'The faucet has insufficient BNB for this claim.');
+        }, async () => {
+            const sent = await wallet.sendTransaction({ to: targetAddr, value: DRIP_BNB });
+            await sent.wait(1, 60000);
+            return sent;
+        });
 
         res.json({
             success: true,
@@ -127,36 +126,30 @@ app.post('/api/claim-bnb', async (req, res) => {
         });
     } catch (error) {
         console.error("BNB Error:", error);
-        res.status(500).json({ success: false, error: "BNB transaction failed" });
+        res.status(error instanceof ClaimError ? error.status : 500).json({ success: false, error: error instanceof ClaimError ? error.message : 'Could not confirm the BNB claim. Check your wallet before retrying after the cooldown.' });
     }
 });
 
 // ==========================================
 // ENDPOINT 3: Klaim MockUSDC (ERC20 Token)
 // ==========================================
-app.post('/api/claim-usdc', async (req, res) => {
+app.post(['/api/claim-usdc', '/faucet/api/claim-usdc'], async (req, res) => {
     try {
-        await ensureTestnet();
-        const { address } = req.body;
+        const { address } = req.body || {};
         if (!address || !isValidAddress(address)) return res.status(400).json({ success: false, error: "Invalid address" });
         
         const targetAddr = ethers.getAddress(address);
         const historyKey = targetAddr.toLowerCase() + '_usdc';
         
-        // Cek Rate Limit
-        const lastClaim = claimHistory.get(historyKey);
-        if (lastClaim && (Date.now() - lastClaim < COOLDOWN_MS)) {
-            return res.status(429).json({ success: false, error: "Wait 1 hour before claiming USDC again" });
-        }
-
-        // Mint USDC
-        const tokenDecimals = await getTokenDecimals();
-        const dripUsdc = ethers.parseUnits(DRIP_USDC_AMOUNT, tokenDecimals);
-        console.log(`💵 Minting ${DRIP_USDC_AMOUNT} MockUSDC ke ${targetAddr}...`);
-        const tx = await usdcContract.mint(targetAddr, dripUsdc);
-        await tx.wait();
-
-        claimHistory.set(historyKey, Date.now());
+        let dripUsdc;
+        const tx = await claimLimiter.run(historyKey, async () => {
+            await ensureTestnet();
+            dripUsdc = ethers.parseUnits(DRIP_USDC_AMOUNT, await getTokenDecimals());
+        }, async () => {
+            const sent = await usdcContract.mint(targetAddr, dripUsdc);
+            await sent.wait(1, 60000);
+            return sent;
+        });
 
         res.json({
             success: true,
@@ -166,13 +159,13 @@ app.post('/api/claim-usdc', async (req, res) => {
         });
     } catch (error) {
         console.error("USDC Error:", error);
-        res.status(500).json({ success: false, error: "USDC transaction failed" });
+        res.status(error instanceof ClaimError ? error.status : 500).json({ success: false, error: error instanceof ClaimError ? error.message : 'Could not confirm the mUSDC claim. Check your wallet before retrying after the cooldown.' });
     }
 });
 
 // Jalankan Server
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
+app.listen(PORT, process.env.HOST || '127.0.0.1', () => {
     console.log(`\n HOMR Faucet berjalan di http://localhost:${PORT}`);
     console.log(` Wallet: ${wallet.address}`);
     console.log(` Network: BNB Smart Chain Testnet\n`);
