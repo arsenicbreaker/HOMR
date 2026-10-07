@@ -2,7 +2,7 @@
 
 Scope: replace the landing navbar's mobile Menu/Close text with hamburger/close glyphs. Desktop layout and existing mobile breakpoint stay unchanged.
 
-Design read: existing HOUSD navigation for mobile visitors; charcoal/lavender palette and existing typography retained. ENERGY 1 / RHYTHM 2 / MOTION 1 for this control.
+Design read: existing HOMR navigation for mobile visitors; charcoal/lavender palette and existing typography retained. ENERGY 1 / RHYTHM 2 / MOTION 1 for this control.
 
 - PASS Hard Gate: native button preserves Menu/Close accessible names, aria-expanded, aria-controls, and visible focus. No new content claims, assets, destinations, themes, forms, or async data states.
 - PASS Purpose Gate: the three-line glyph identifies navigation; the X identifies closing. A 44px target supports touch input; existing colors and shape preserve the navbar's identity. No decorative effects added.

@@ -9,7 +9,7 @@ Design read: a housing-credit explainer for borrowers and investors, using the s
 - `src/components/DecisionCard.jsx` holds the two content variants; `src/components/ui/Lens.jsx` is the reusable magnifier.
 - The existing app uses Vite, React JSX, and plain CSS. The supplied TypeScript/Tailwind example was adapted to this stack, with `motion` installed. No shadcn, TypeScript, or Tailwind migration was performed.
 - The existing `src/components/ui` directory is used so shared controls stay separate from section-specific content. Lens styles live beside that component; card styles use the existing `src/styles.css` entry point.
-- The sample's Apple Vision Pro image and copy were replaced with labeled illustrations of the existing HOUSD workflows. These are explanatory diagrams, not live review or transaction records.
+- The sample's Apple Vision Pro image and copy were replaced with labeled illustrations of the existing HOMR workflows. These are explanatory diagrams, not live review or transaction records.
 
 ## Decisions
 
@@ -51,7 +51,7 @@ Design read: a housing-credit explainer for borrowers and investors, using the s
 - R-14 PASS: equal outer cards communicate peer decisions; contrasting preview compositions identify their different functions.
 - R-19 PASS: interaction-only animation and reduced-motion handling match MOTION 1.
 - R-22 PASS: diagrams directly represent the existing review and auction workflows.
-- Liveliness PASS: dials declared; heading establishes hierarchy, card spacing separates stages, lavender provides the accent, and numbered decisions plus provenance labels retain HOUSD's visual identity.
+- Liveliness PASS: dials declared; heading establishes hierarchy, card spacing separates stages, lavender provides the accent, and numbered decisions plus provenance labels retain HOMR's visual identity.
 - C-1 through C-5 PASS: choices documented, both controls verified, section preserves its existing purpose, responsive checks passed, and illustrations are honestly labeled.
 - R-05 / R-11 / R-15 / R-16 / R-20 / R-21 / R-29 / R-30 / R-31 PASS: this scoped replacement follows the user's two-card request, reference corners, existing copy and palette, dark page context, and documented visual reasons.
 

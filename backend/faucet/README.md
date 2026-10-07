@@ -1,4 +1,4 @@
-# HOUSD testnet faucet
+# HOMR testnet faucet
 
 The frontend page is available at `/faucet` on the Vite dev server, for example `http://localhost:5173/faucet`. It calls this service at `http://localhost:3001` by default. Set `VITE_FAUCET_API_BASE` in the frontend environment when the service uses another URL.
 

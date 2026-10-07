@@ -2,13 +2,13 @@
 
 Scope: Housing Credit Vault, Active Loans, and the provenance ledger inside `#transparansi`.
 
-Design read: evidence cards for HOUSD's housing-credit prototype, using the user's React Bits BorderGlow reference. ENERGY 2 / RHYTHM 2 / MOTION 1.
+Design read: evidence cards for HOMR's housing-credit prototype, using the user's React Bits BorderGlow reference. ENERGY 2 / RHYTHM 2 / MOTION 1.
 
 ## Implementation decisions
 
 - Adapted the supplied JavaScript/CSS component into `src/components/ui/BorderGlow.jsx` and its adjacent CSS. No dependencies added.
 - All three existing surfaces use the same wrapper; their data, labels, fetch logic, and retry action remain intact.
-- Dark #120F17 surfaces and lavender-led gradient colors match HOUSD. A low fill opacity preserves readable data; the glow remains concentrated at the border.
+- Dark #120F17 surfaces and lavender-led gradient colors match HOMR. A low fill opacity preserves readable data; the glow remains concentrated at the border.
 - The supplied 28px corners separate the evidence panels from the surrounding page. Existing columns remain on desktop; mobile ledger fields stack in reading order.
 - Pointer proximity and angle control the cone mask. Decorative layers ignore pointer events. Keyboard focus highlights the containing card and the actual control, without adding decorative tab stops.
 - Intro animation defaults to off. Optional sweep animation cancels on cleanup and respects reduced motion. Glow padding is capped by viewport width to prevent mobile overflow.
@@ -16,7 +16,7 @@ Design read: evidence cards for HOUSD's housing-credit prototype, using the user
 ## Delivery gate
 
 - Hard Gate PASS: no new statistics, people, claims, or navigation destinations; no new em dashes in displayed copy. Browser checks at 1280px, 375px, and 320px found no document or inner-card horizontal overflow. Data/error behavior is retained.
-- Purpose Gate PASS: directional glow implements the explicit reference and indicates the surface under the pointer. No glow is applied to status chips or controls; subdued fill maintains text hierarchy. Existing type and status colors preserve HOUSD identity.
+- Purpose Gate PASS: directional glow implements the explicit reference and indicates the surface under the pointer. No glow is applied to status chips or controls; subdued fill maintains text hierarchy. Existing type and status colors preserve HOMR identity.
 - Liveliness PASS: dials declared; the section heading remains dominant, asymmetrical live-card columns are retained, and the wider provenance ledger provides a distinct information level.
 - Craftsmanship PASS: production build and three existing landing interaction tests passed; `git diff --check` passed. Browser error-log inspection returned no entries.
 - Pointer verification PASS: moving along the Vault, Loans, and Ledger edges updated their separate angles and proximity values. Vault edge proximity reached 95.014 with glow opacity 0.929; the visible highlight followed the upper-right corner.

@@ -38,7 +38,7 @@ export default function RiskGlobe() {
           <p className="section-eyebrow">Visible limits</p>
           <h2 id="risk-title">Transparency does not eliminate risk.</h2>
           <p className="risk-globe-body">
-            HOUSD shows LTV, concentration, maturity, loan status, and transaction records.
+            HOMR shows LTV, concentration, maturity, loan status, and transaction records.
             This prototype does not verify real collateral and has not been audited.
           </p>
           <div className="risk-globe-actions">

@@ -20,8 +20,8 @@ export function AppNavbar({ roleLabel, menuOpen, onMenuToggle }) {
             <span />
           </span>
         </button>
-        <Link to="/" className="dashboard-wordmark" aria-label="HOUSD landing page">
-          HOUSD<span>.</span>
+        <Link to="/" className="dashboard-wordmark" aria-label="HOMR landing page">
+          HOMR<span>.</span>
         </Link>
         <span className="dashboard-topbar__divider" aria-hidden="true" />
         <span className="dashboard-role-label">{roleLabel}</span>

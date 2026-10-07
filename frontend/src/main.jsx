@@ -109,7 +109,7 @@ function ShortcutRow({ keys: keysList, label }) {
 function Wordmark() {
   return (
     <span className="wordmark" aria-hidden="true">
-      HOUSD<span className="wordmark-dot">.</span>
+      HOMR<span className="wordmark-dot">.</span>
     </span>
   );
 }
@@ -125,7 +125,7 @@ function HeroAppPreview() {
             <span className="control-dot maximize" />
           </div>
           <div className="hero-app-title">
-            <span className="wordmark-mini">HOUSD</span>
+            <span className="wordmark-mini">HOMR</span>
             <span className="topbar-divider">·</span>
             <span>Housing Credit Vault (BNB Testnet)</span>
           </div>
@@ -357,7 +357,7 @@ export function App() {
               <path d={menuOpen ? 'M6 6l12 12M6 18L18 6' : 'M4 6h16M4 12h16M4 18h16'} />
             </svg>
           </button>
-          <a className="brand-link" href="#top" aria-label="HOUSD, back to top">
+          <a className="brand-link" href="#top" aria-label="HOMR, back to top">
             <Wordmark />
           </a>
           <nav
@@ -392,7 +392,7 @@ export function App() {
             allocated <span className="hero-highlight">openly.</span>
           </h1>
           <p className="hero-copy">
-            HOUSD connects stablecoin investors with vetted property borrowers
+            HOMR connects stablecoin investors with vetted property borrowers
             through a simple vault and verifiable auctions.
           </p>
           <div className="hero-actions">
@@ -570,7 +570,7 @@ export function App() {
               </button>
             </div>
             <h2 id="dialog-title" className="dialog-title">
-              How would you like to experience HOUSD?
+              How would you like to experience HOMR?
             </h2>
             <div className="dialog-options">
               <button

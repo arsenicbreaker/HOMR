@@ -60,4 +60,4 @@ The following checks apply to the changed section, not to unrelated existing pag
 - PASS C-5: existing content retained without fabricated evidence.
 - PASS R-11: existing small control and large panel corner sizes retained.
 - PASS R-15/R-16: concrete Investor/Borrower controls; no marketing buzzwords added.
-- PASS R-20/R-21/R-29/R-30: existing HOUSD typography and palette retained; the supplied reference informs behavior without importing its demo branding or gradient palette.
+- PASS R-20/R-21/R-29/R-30: existing HOMR typography and palette retained; the supplied reference informs behavior without importing its demo branding or gradient palette.

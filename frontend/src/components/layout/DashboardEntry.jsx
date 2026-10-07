@@ -16,7 +16,7 @@ export default function DashboardEntry({ role, children }) {
   return (
     <main className="dashboard-entry" aria-busy="true">
       <div className="dashboard-entry__content" role="status" aria-live="polite">
-        <span className="dashboard-entry__brand">HOUSD.</span>
+        <span className="dashboard-entry__brand">HOMR.</span>
         <h1>Preparing your {title} dashboard</h1>
         <p>{detail}</p>
         <div className="dashboard-entry__track" aria-hidden="true"><span /></div>

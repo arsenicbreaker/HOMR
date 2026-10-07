@@ -43,7 +43,7 @@ Design read: role-based financial operations dashboards for borrowers, investors
 - PASS: each selected screen has one title and one primary action or information focus.
 - PASS: whitespace separates page context, summaries, workflows, and task panels.
 - PASS: lavender is the deliberate accent and is reserved for an 8% selected-navigation tint, a 2px active indicator, focus, and recommended actions.
-- PASS: the slim neutral navigation rail and one dominant twilight summary form the repeated HOUSD workspace motif.
+- PASS: the slim neutral navigation rail and one dominant twilight summary form the repeated HOMR workspace motif.
 - PASS: the design read was declared before implementation and recorded in `DESIGN_DECISIONS.md`.
 
 ## Craftsmanship and quality locks
@@ -57,7 +57,7 @@ Design read: role-based financial operations dashboards for borrowers, investors
 - R-11 PASS: the existing 8px and 16px binary radius system is retained; buttons are not pill-shaped.
 - R-15 PASS: action labels describe the concrete transaction or navigation result.
 - R-16 PASS: no generic AI marketing buzzwords were added.
-- R-20 PASS: the narrow neutral rail, dominant twilight summary, restrained lavender focus, and evidence-oriented rows preserve HOUSD's identity.
+- R-20 PASS: the narrow neutral rail, dominant twilight summary, restrained lavender focus, and evidence-oriented rows preserve HOMR's identity.
 - R-21 PASS: the established dark product theme is retained consistently across every dashboard section.
 - R-29 PASS: the dashboard uses warm dark neutrals, twilight purple, and one lavender accent; state colors are semantic only.
 - R-30 PASS: the implementation follows the repository's own `Design.md` rather than copying an external product.

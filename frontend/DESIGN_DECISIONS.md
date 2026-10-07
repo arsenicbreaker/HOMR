@@ -1,4 +1,4 @@
-# HOUSD Landing Page Design Decisions
+# HOMR Landing Page Design Decisions
 
 ## Role dashboard extension
 

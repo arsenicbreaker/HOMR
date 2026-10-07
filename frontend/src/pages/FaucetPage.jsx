@@ -72,7 +72,7 @@ export function FaucetPage() {
       <a className="skip-link" href="#faucet-main">Skip to content</a>
       <div className="topbar-wrapper">
         <header className="topbar faucet-topbar">
-          <Link to="/" className="brand-link" aria-label="HOUSD, back to home"><span className="wordmark">HOUSD<span className="wordmark-dot">.</span></span></Link>
+          <Link to="/" className="brand-link" aria-label="HOMR, back to home"><span className="wordmark">HOMR<span className="wordmark-dot">.</span></span></Link>
           <nav className="faucet-nav" aria-label="Faucet navigation">
             <Link to="/">Home</Link>
             <span aria-current="page">Faucet</span>
@@ -87,15 +87,15 @@ export function FaucetPage() {
             <span>Built on</span>
             <span className="hero-network-brand"><img src="/brand/bnb-chain-symbol.svg" width="22" height="22" alt="" /><strong>BNB Chain Testnet</strong></span>
           </div>
-          <h1 id="faucet-title">Test tokens to <span className="hero-highlight">use HOUSD.</span></h1>
-          <p>Get BNB for transaction fees and mUSDC to try depositing into the HOUSD vault. These tokens work only on testnet.</p>
+          <h1 id="faucet-title">Test tokens to <span className="hero-highlight">use HOMR.</span></h1>
+          <p>Get BNB for transaction fees and mUSDC to try depositing into the HOMR vault. These tokens work only on testnet.</p>
           <span className="faucet-intro__note">BNB CHAIN TESTNET <span aria-hidden="true">·</span> CHAIN ID 97 <span aria-hidden="true">·</span> NO MONETARY VALUE</span>
         </section>
 
         <div className="faucet-workspace">
           <div className="faucet-workspace__bar" aria-hidden="true">
             <span className="faucet-workspace__lights"><i /><i /><i /></span>
-            <span>HOUSD <span>·</span> Testnet Faucet</span>
+            <span>HOMR <span>·</span> Testnet Faucet</span>
             <span className="faucet-workspace__network">BNB TESTNET</span>
           </div>
           <div className="faucet-layout">
@@ -208,7 +208,7 @@ export function FaucetPage() {
           </section>
           </div>
         </div>
-        <p className="faucet-footer-note">This faucet is only for the HOUSD simulation on BNB Chain Testnet.</p>
+        <p className="faucet-footer-note">This faucet is only for the HOMR simulation on BNB Chain Testnet.</p>
       </main>
     </div>
   );

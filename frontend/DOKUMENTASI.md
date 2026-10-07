@@ -1,7 +1,7 @@
-# Dokumentasi Frontend HOUSD Protocol (BNB Smart Chain MVP)
+# Dokumentasi Frontend HOMR Protocol (BNB Smart Chain MVP)
 
 ## Gambaran Umum
-Aplikasi Frontend HOUSD Protocol dibangun menggunakan **React 19 + Vite + Wagmi + Viem + Vitest** dengan arsitektur **Additive-Only**. Desain antarmuka mengacu pada standar *Superhuman Dark UI* (surfaces `#0B0B0D`, `#131316`, `#1A1A1E` dengan aksen electric-violet `#7C7CFF`).
+Aplikasi Frontend HOMR Protocol dibangun menggunakan **React 19 + Vite + Wagmi + Viem + Vitest** dengan arsitektur **Additive-Only**. Desain antarmuka mengacu pada standar *Superhuman Dark UI* (surfaces `#0B0B0D`, `#131316`, `#1A1A1E` dengan aksen electric-violet `#7C7CFF`).
 
 Dashboard menggunakan data live dari kontrak BNB Testnet dan API. Mode demo, data simulasi, dan toggle demo/live sudah dihapus. Wallet diperlukan untuk mengirim application dan transaksi; pembacaan data publik tetap tersedia tanpa wallet.
 
