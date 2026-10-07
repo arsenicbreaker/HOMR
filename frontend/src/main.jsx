@@ -369,7 +369,6 @@ export function App() {
             <a href="#journeys" onClick={() => setMenuOpen(false)}>Journeys</a>
             <a href="#transparansi" onClick={() => setMenuOpen(false)}>Transparency</a>
             <a href="#risiko" onClick={() => setMenuOpen(false)}>Risks</a>
-            <Link to="/faucet" onClick={() => setMenuOpen(false)}>Faucet</Link>
           </nav>
           <div className="topbar-actions">
             <button className="cta-button" type="button" onClick={() => setDialogOpen(true)}>
@@ -471,7 +470,7 @@ export function App() {
           >
             <p className="sticky-scroll-notice">
               <strong>BNB Testnet</strong>
-              <span>Connect your wallet to submit transactions. Use the faucet to obtain test tokens.</span>
+              <span>Connect your wallet to submit transactions.</span>
             </p>
           </StickyScroll>
         </section>
@@ -530,7 +529,10 @@ export function App() {
       <footer className="site-footer">
         <Wordmark />
         <p>Finance &amp; Commerce track · Indonesia Web3 Hackathon 2026</p>
-        <p className="footer-meta">v0.1 · testnet</p>
+        <div className="footer-meta">
+          <Link to="/faucet" className="footer-faucet-link">Faucet</Link>
+          <span>v0.1 · testnet</span>
+        </div>
       </footer>
 
       <AnimatePresence>

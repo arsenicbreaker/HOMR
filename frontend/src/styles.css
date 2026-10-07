@@ -1178,9 +1178,23 @@ a:focus-visible,
 }
 
 .footer-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
   font-family: var(--mono-font);
   color: var(--ash);
   letter-spacing: 0.04em;
+}
+
+.footer-faucet-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 /* ---------- Dialog / Modal ---------- */
@@ -1747,15 +1761,6 @@ a:focus-visible,
   font-weight: 600;
   color: var(--on-dark-mute);
 }
-
-.dashboard-faucet-link {
-  color: var(--primary);
-  font-size: 12px;
-  font-weight: 600;
-  transition: color var(--transition);
-}
-
-.dashboard-faucet-link:hover { color: var(--ink); }
 
 .dashboard-menu-button {
   display: none;
