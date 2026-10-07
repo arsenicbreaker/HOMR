@@ -32,11 +32,19 @@ export async function publicRoutes(app: FastifyInstance) {
         return loan;
     });
 
-    app.get("/events", async (req) => {
+    app.get("/events", async (req, reply) => {
         const { limit = "50" } = req.query as { limit?: string };
+        const n = Number(limit);
+        if (Number.isNaN(n) || n < 1) {
+            return reply.code(400).send({
+                error: "invalid_limit",
+                message: "limit harus angka >= 1",
+            });
+        }
+        const take = Math.min(Math.floor(n), 200);
         const events = await prisma.chainEvent.findMany({
             orderBy: { blockNumber: "desc" },
-            take: Math.min(Number(limit), 200),
+            take,
         });
         return { events };
     });

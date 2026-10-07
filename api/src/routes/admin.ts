@@ -72,6 +72,15 @@ function mapAdminError(msg: string): { code: number; body: Record<string, unknow
             },
         };
     }
+    if (msg === "AMOUNT_EXCEEDS_TOKEN_PRECISION") {
+        return {
+            code: 400,
+            body: {
+                error: msg,
+                message: "Jumlah tidak cocok dengan presisi token. Gunakan angka bulat.",
+            },
+        };
+    }
 
     // === Auction lifecycle ===
     if (msg === "AUCTION_NOT_FOUND") {
@@ -210,6 +219,13 @@ export async function adminRoutes(app: FastifyInstance) {
             return reply.code(400).send({
                 error: "MISSING_DURATIONS",
                 message: "commitDuration and revealDuration required (seconds)",
+            });
+        }
+
+        if (!Number.isInteger(body.commitDuration) || !Number.isInteger(body.revealDuration)) {
+            return reply.code(400).send({
+                error: "INVALID_DURATIONS",
+                message: "commitDuration dan revealDuration harus bilangan bulat",
             });
         }
 

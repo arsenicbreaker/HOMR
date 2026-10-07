@@ -88,15 +88,12 @@ async function processBlockRange(
         }
 
         if (errorCode === -32005 || errorCode === -32602) {
-            // RPC limit — skip ahead sebentar, jangan spam retry
+            // RPC limit — retry dari blok yang sama, jangan skip
             logger.warn(
-                `RPC limit at blocks ${fromBlock}..${toBlock} (code ${errorCode}) - skipping forward`
+                `RPC limit at blocks ${fromBlock}..${toBlock} (code ${errorCode}) - retry with backoff`
             );
-            // Skip ke +BATCH_SIZE*10 block (biar tidak stuck di range yang sama)
-            const skipTo = toBlock + BATCH_SIZE * 10n;
-            const currentBlock = await publicClient.getBlockNumber();
-            const newCursor = skipTo > currentBlock ? currentBlock : skipTo;
-            return { skipped: true, newCursor };
+            await new Promise((resolve) => setTimeout(resolve, 5000));
+            return { skipped: true, newCursor: fromBlock - 1n }; // retry dari block yang sama
         }
 
         throw err;
