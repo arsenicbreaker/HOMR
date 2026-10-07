@@ -9,6 +9,9 @@ describe('deployed service endpoints and application history', () => {
     expect(serviceBase(undefined, false, 'http://localhost:4000', 'https://api.homr.web.id')).toBe('https://api.homr.web.id');
     expect(serviceBase(undefined, true, 'http://localhost:4000', 'https://api.homr.web.id')).toBe('http://localhost:4000');
     expect(serviceBase(' https://api.homr.web.id/ ', false, '', '')).toBe('https://api.homr.web.id');
+    expect(serviceBase('http://localhost:4000', false, 'http://localhost:4000', 'https://api.homr.web.id')).toBe('https://api.homr.web.id');
+    expect(serviceBase('http://127.0.0.1:4000', false, 'http://localhost:4000', 'https://api.homr.web.id')).toBe('https://api.homr.web.id');
+    expect(serviceBase('http://localhost:4000', true, 'http://localhost:4000', 'https://api.homr.web.id')).toBe('http://localhost:4000');
   });
 
   it('reports network and CORS failures as unavailable history', async () => {
