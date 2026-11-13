@@ -1,0 +1,36 @@
+{
+  "name": "homr-landing",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@near-wallet-selector/core": "^8.9.15",
+    "@near-wallet-selector/here-wallet": "^8.9.15",
+    "@near-wallet-selector/meteor-wallet": "^10.1.4",
+    "@near-wallet-selector/modal-ui": "^8.9.15",
+    "@near-wallet-selector/my-near-wallet": "^8.9.15",
+    "@react-three/drei": "^10.7.9",
+    "@react-three/fiber": "^9.8.1",
+    "@tanstack/react-query": "^5.103.2",
+    "motion": "^13.5.0",
+    "near-api-js": "^5.0.1",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-router-dom": "^7.18.4",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.7",
+    "@vitejs/plugin-react": "6.1.1",
+    "jsdom": "29.1.1",
+    "vite": "^8.2.0",
+    "vitest": "5.0.1"
+  }
+}
