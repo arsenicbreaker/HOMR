@@ -60,7 +60,14 @@ export function FaucetPage() {
       setResults((current) => ({ ...current, [token]: { type: 'success', message: data.message, txHash: data.txHash } }));
       loadInfo();
     } catch (error) {
-      setResults((current) => ({ ...current, [token]: { type: 'error', message: error.message } }));
+      // Show a user-friendly message instead of raw JSON/RPC errors
+      const raw = error.message || '';
+      const friendly = raw.includes('429') || raw.toLowerCase().includes('rate limit') || raw.toLowerCase().includes('too many request')
+        ? 'Faucet is busy, please try again in a minute.'
+        : raw.includes('jsonrpc') || raw.startsWith('{')
+          ? 'Something went wrong while claiming tokens. Please try again shortly.'
+          : raw || 'An unexpected error occurred. Please try again.';
+      setResults((current) => ({ ...current, [token]: { type: 'error', message: friendly } }));
     } finally {
       setClaiming(null);
     }
