@@ -1,30 +1,35 @@
-<<<<<<< HEAD
-# HOMR
+<div align="center">
+  <img src="./logo.png" alt="HOMR logo" width="150" />
 
-**Housing credit allocation on NEAR Testnet**
+  <h1>HOMR</h1>
 
-HOMR connects stablecoin investors with property borrowers through a shared liquidity vault and a sealed-bid credit auction. Credit documents stay in an offchain review workflow, while approvals, bids, allocations, loans, and repayment records can be verified on NEAR.
+  <p><strong>Transparent housing credit allocation on NEAR Testnet</strong></p>
 
-> HOMR is a testnet prototype. It uses mock USDC with no monetary value and is not a production lending service.
+  <p>
+    <a href="https://homr.web.id"><strong>Live website: homr.web.id</strong></a>
+  </p>
 
-| Resource | Link |
-| --- | --- |
-| Live demo | [homr.web.id](https://homr.web.id) |
-| Public repository | [github.com/arsenicbreaker/HOMR](https://github.com/arsenicbreaker/HOMR) |
-| Network | NEAR Testnet |
-| Hackathon tracks | Unstoppable DeFi, Real-World Money |
-=======
-# 🏠 HOMR — Housing Credit Market
+  <p>
+    HOMR connects stablecoin investors with vetted property borrowers through a shared liquidity vault,
+    sealed-bid credit auctions, and verifiable onchain records.
+  </p>
 
-> **A decentralized housing credit protocol on NEAR Protocol.** HOMR connects stablecoin investors with vetted property borrowers through a NAV-tracked housing vault, commit-reveal credit auctions, and immutable on-chain audit proofs.
+  <p>
+    <a href="https://testnet.nearblocks.io"><img src="https://img.shields.io/badge/NEAR-TESTNET-111111" alt="NEAR Testnet" /></a>
+    <img src="https://img.shields.io/badge/CONTRACT-RUST-7B4B35" alt="Rust contracts" />
+    <img src="https://img.shields.io/badge/WEB-REACT-3A3A3A" alt="React web app" />
+    <a href="./LICENSE"><img src="https://img.shields.io/badge/LICENSE-MIT-6C4CCF" alt="MIT License" /></a>
+  </p>
 
-[![NEAR Testnet](https://img.shields.io/badge/NEAR-testnet-00ec97)](https://testnet.nearblocks.io)
-[![near-sdk](https://img.shields.io/badge/near--sdk-5.17.2-000000)](https://crates.io/crates/near-sdk)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
-[![Hackathon](https://img.shields.io/badge/Indonesia%20Web3%20Hackathon-2026-orange)](#-hackathon-notes)
+  <p>
+    <a href="#-what-is-homr">What is HOMR?</a> ·
+    <a href="#-architecture--tech-stack">Architecture</a> ·
+    <a href="#-smart-contracts-near-testnet">Testnet contracts</a> ·
+    <a href="#-local-development-setup">Run locally</a>
+  </p>
 
-Built for the **Indonesia Web3 Hackathon 2026 — Finance & Commerce track**.
->>>>>>> c820f02574bd56a5bf1f66b258a16f40e2430af0
+  <sub>Testnet prototype using mock USDC with no monetary value.</sub>
+</div>
 
 ---
 
@@ -62,14 +67,14 @@ Housing finance in emerging markets is slow, opaque, and hard to audit. HOMR tur
 
 ### Smart Contracts — Rust + `near-sdk` 5.17.2
 
-| Contract | Crate | Responsibility |
-| --- | --- | --- |
-| **Housing Vault** | `contracts/housing_vault` | NEP-141 `hvSHARE` vault with NAV tracking, deposit/withdraw, loan funding and repayment booking |
+| Contract           | Crate                      | Responsibility                                                                                  |
+| ------------------ | -------------------------- | ----------------------------------------------------------------------------------------------- |
+| **Housing Vault**  | `contracts/housing_vault`  | NEP-141 `hvSHARE` vault with NAV tracking, deposit/withdraw, loan funding and repayment booking |
 | **Credit Auction** | `contracts/credit_auction` | Borrower allow-list, commit-reveal bidding, reveal verification, winner selection, loan trigger |
-| **Loan Manager** | `contracts/loan_manager` | Loan origination, repayment accounting, cross-contract funding and audit registration |
-| **Audit Registry** | `contracts/audit_registry` | Append-only auction/loan/repayment proofs with NEP-297 events |
-| **Mock Token** | `contracts/mock_token` | Test-only NEP-141 `mUSDC` with an owner-gated mint |
-| **Common** | `contracts/common` | Shared proof structs, commitment hashing and NEP-297 event helper |
+| **Loan Manager**   | `contracts/loan_manager`   | Loan origination, repayment accounting, cross-contract funding and audit registration           |
+| **Audit Registry** | `contracts/audit_registry` | Append-only auction/loan/repayment proofs with NEP-297 events                                   |
+| **Mock Token**     | `contracts/mock_token`     | Test-only NEP-141 `mUSDC` with an owner-gated mint                                              |
+| **Common**         | `contracts/common`         | Shared proof structs, commitment hashing and NEP-297 event helper                               |
 
 The workspace enforces `overflow-checks = true`, LTO and `panic = "abort"` in release builds.
 
@@ -92,15 +97,15 @@ The workspace enforces `overflow-checks = true`, LTO and `panic = "abort"` in re
 
 HOMR started life as a BNB Chain / Solidity prototype. The current codebase is a full rewrite around NEAR's account model and standards:
 
-| Concern | EVM prototype | NEAR implementation |
-| --- | --- | --- |
-| Token standard | ERC-20 | NEP-141 (`ft_transfer`, `ft_on_transfer`, `ft_balance_of`) |
-| Vault shares | ERC-4626-style shares | NEP-141 `hvSHARE` with booked NAV + virtual-offset inflation guard |
-| Events | Solidity `event` logs | NEP-297 `EVENT_JSON` logs (`homr_auction`, `homr_vault`, `homr_loan`, `homr_audit`) |
-| Wallet | wagmi / injected provider | `@near-wallet-selector` + `signAndSendTransaction` |
-| Transaction identity | `txHash` | `receiptId` + `predecessorId` + `blockHeight` |
-| Auth | `personal_sign` | NEP-413 message signatures |
-| Backend chain client | `viem` | `near-api-js` + raw JSON-RPC |
+| Concern              | EVM prototype             | NEAR implementation                                                                 |
+| -------------------- | ------------------------- | ----------------------------------------------------------------------------------- |
+| Token standard       | ERC-20                    | NEP-141 (`ft_transfer`, `ft_on_transfer`, `ft_balance_of`)                          |
+| Vault shares         | ERC-4626-style shares     | NEP-141 `hvSHARE` with booked NAV + virtual-offset inflation guard                  |
+| Events               | Solidity `event` logs     | NEP-297 `EVENT_JSON` logs (`homr_auction`, `homr_vault`, `homr_loan`, `homr_audit`) |
+| Wallet               | wagmi / injected provider | `@near-wallet-selector` + `signAndSendTransaction`                                  |
+| Transaction identity | `txHash`                  | `receiptId` + `predecessorId` + `blockHeight`                                       |
+| Auth                 | `personal_sign`           | NEP-413 message signatures                                                          |
+| Backend chain client | `viem`                    | `near-api-js` + raw JSON-RPC                                                        |
 
 Legacy EVM contracts, ABIs and the Hardhat faucet are kept under `legacy/` and `backend/` for reference only; nothing in `contracts/`, `api/` or `frontend/` imports them.
 
@@ -109,12 +114,15 @@ Legacy EVM contracts, ABIs and the Hardhat faucet are kept under `legacy/` and `
 ## ✨ Key Features
 
 ### 🚰 Faucet — 1,000 mUSDC to try the protocol
+
 A signed backend endpoint mints **1,000 mUSDC** (6 decimals) straight to any valid testnet account. The faucet page ships with the app at `/faucet`; `GET /api/info` reports the drip size and token contract, `POST /api/claim-usdc` performs the mint with the admin key and returns the real transaction hash.
 
 ### 🏦 Housing Vault — deposit mUSDC, mint `hvSHARE`
+
 Deposits are made with `ft_transfer_call` into the vault, which mints **NEP-141 `hvSHARE`** at the booked NAV. The vault tracks available capital and outstanding principal, and a 1e6/1e6 virtual seed pair closes the classic first-depositor donation attack. Withdrawals redeem shares for their proportional underlying via a self-callback.
 
 ### 🔨 Credit Auction — commit, reveal, settle
+
 Only operator-approved borrowers can bid, and only within the vault's approved principal limit.
 
 1. `commit_bid(auction_id, commitment)` — hash of `(amount, rate_bps, term_days, salt, borrower)` plus a 0.01 NEAR anti-spam deposit.
@@ -122,9 +130,11 @@ Only operator-approved borrowers can bid, and only within the vault's approved p
 3. `finalize_auction(auction_id)` — after the reveal deadline, the highest-yield revealed bid wins, the auction calls `loan_manager.issue_loan`, the loan manager pulls principal from the vault, and the audit registry records the proof.
 
 ### 🧾 Audit Registry — immutable credit proofs
+
 Auction registrations, loan origination and every repayment are stored with a SHA-256 proof hash and emitted as NEP-297 `homr_audit` events. Proofs are append-only, authorized to the operator and trusted callers, and readable through `get_auction`, `get_loan` and `get_repayments`.
 
 ### 👀 Walletless demo / read-only mode
+
 Judges can explore the landing page and both dashboards without installing a wallet: vault, loan and event data stream from the API's live testnet reads, labelled `LIVE ONCHAIN`. The wallet selector is only required for state-changing actions (deposit, bid, repay, admin operations).
 
 ---
@@ -133,13 +143,13 @@ Judges can explore the landing page and both dashboards without installing a wal
 
 All contracts are deployed on **NEAR testnet**:
 
-| Contract | Account ID | Explorer |
-| --- | --- | --- |
-| 🏦 Housing Vault | `housing-vault.funnylace8065.testnet` | [view](https://testnet.nearblocks.io/address/housing-vault.funnylace8065.testnet) |
+| Contract          | Account ID                             | Explorer                                                                           |
+| ----------------- | -------------------------------------- | ---------------------------------------------------------------------------------- |
+| 🏦 Housing Vault  | `housing-vault.funnylace8065.testnet`  | [view](https://testnet.nearblocks.io/address/housing-vault.funnylace8065.testnet)  |
 | 🔨 Credit Auction | `credit-auction.funnylace8065.testnet` | [view](https://testnet.nearblocks.io/address/credit-auction.funnylace8065.testnet) |
-| 📄 Loan Manager | `loan-manager.funnylace8065.testnet` | [view](https://testnet.nearblocks.io/address/loan-manager.funnylace8065.testnet) |
-| 🧾 Audit Registry | `audit.funnylace8065.testnet` | [view](https://testnet.nearblocks.io/address/audit.funnylace8065.testnet) |
-| 🪙 Mock USDC | `mock-token.funnylace8065.testnet` | [view](https://testnet.nearblocks.io/address/mock-token.funnylace8065.testnet) |
+| 📄 Loan Manager   | `loan-manager.funnylace8065.testnet`   | [view](https://testnet.nearblocks.io/address/loan-manager.funnylace8065.testnet)   |
+| 🧾 Audit Registry | `audit.funnylace8065.testnet`          | [view](https://testnet.nearblocks.io/address/audit.funnylace8065.testnet)          |
+| 🪙 Mock USDC      | `mock-token.funnylace8065.testnet`     | [view](https://testnet.nearblocks.io/address/mock-token.funnylace8065.testnet)     |
 
 Contract IDs are wired in:
 
@@ -165,13 +175,13 @@ cargo near build
 
 ### Prerequisites
 
-| Tool | Version | Notes |
-| --- | --- | --- |
-| **Node.js** | 20+ (tested on 26) | npm ships with it |
-| **Rust** | stable | plus the `wasm32-unknown-unknown` target for contracts |
-| **NASM** | 2.x | **Windows only** — required by `aws-lc-sys` for `cargo test` |
-| **PostgreSQL** | 14+ | local instance or a free Neon/Supabase database |
-| **NEAR CLI** | latest | only needed to deploy or inspect contracts |
+| Tool           | Version            | Notes                                                        |
+| -------------- | ------------------ | ------------------------------------------------------------ |
+| **Node.js**    | 20+ (tested on 26) | npm ships with it                                            |
+| **Rust**       | stable             | plus the `wasm32-unknown-unknown` target for contracts       |
+| **NASM**       | 2.x                | **Windows only** — required by `aws-lc-sys` for `cargo test` |
+| **PostgreSQL** | 14+                | local instance or a free Neon/Supabase database              |
+| **NEAR CLI**   | latest             | only needed to deploy or inspect contracts                   |
 
 ```bash
 git clone https://github.com/arsenicbreaker/HOMR.git
@@ -226,14 +236,14 @@ npm run prisma:deploy       # production / existing database
 
 Useful endpoints once it is running:
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| `GET` | `/health` | Liveness + network |
-| `GET` | `/api/vault` | Live vault state from testnet |
-| `GET` | `/api/loans`, `/api/loans/:id` | Indexed loans |
-| `GET` | `/api/events?limit=50` | NEP-297 event feed |
-| `GET` | `/api/info` | Faucet metadata (`dripUsdc: "1000"`) |
-| `POST` | `/api/claim-usdc` | Mint 1,000 mUSDC to `{ "accountId": "you.testnet" }` |
+| Method | Path                           | Purpose                                              |
+| ------ | ------------------------------ | ---------------------------------------------------- |
+| `GET`  | `/health`                      | Liveness + network                                   |
+| `GET`  | `/api/vault`                   | Live vault state from testnet                        |
+| `GET`  | `/api/loans`, `/api/loans/:id` | Indexed loans                                        |
+| `GET`  | `/api/events?limit=50`         | NEP-297 event feed                                   |
+| `GET`  | `/api/info`                    | Faucet metadata (`dripUsdc: "1000"`)                 |
+| `POST` | `/api/claim-usdc`              | Mint 1,000 mUSDC to `{ "accountId": "you.testnet" }` |
 
 ### 2️⃣ Frontend (`frontend/`)
 
@@ -309,7 +319,6 @@ HOMR/
 
 ---
 
-<<<<<<< HEAD
 ## 🔎 Multiple-project disclosure
 
 The team behind HOMR also submitted **Auvora Finance** as a separate, independent project to NEAR HACKATHON. The projects use different repositories and address different products.
@@ -320,14 +329,8 @@ This disclosure is included in accordance with NEAR HACKATHON rule Q-015 for par
 
 ---
 
-=======
->>>>>>> c820f02574bd56a5bf1f66b258a16f40e2430af0
 ## 📄 License
 
 MIT — see [LICENSE](./LICENSE).
 
-<<<<<<< HEAD
 <p align="center">Built for NEAR HACKATHON · NEAR Protocol</p>
-=======
-<p align="center">Built with ❤️ for the Indonesia Web3 Hackathon 2026 · NEAR Protocol</p>
->>>>>>> c820f02574bd56a5bf1f66b258a16f40e2430af0
