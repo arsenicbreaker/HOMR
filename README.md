@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # HOMR
 
 **Housing credit allocation on NEAR Testnet**
@@ -12,6 +13,18 @@ HOMR connects stablecoin investors with property borrowers through a shared liqu
 | Public repository | [github.com/arsenicbreaker/HOMR](https://github.com/arsenicbreaker/HOMR) |
 | Network | NEAR Testnet |
 | Hackathon tracks | Unstoppable DeFi, Real-World Money |
+=======
+# 🏠 HOMR — Housing Credit Market
+
+> **A decentralized housing credit protocol on NEAR Protocol.** HOMR connects stablecoin investors with vetted property borrowers through a NAV-tracked housing vault, commit-reveal credit auctions, and immutable on-chain audit proofs.
+
+[![NEAR Testnet](https://img.shields.io/badge/NEAR-testnet-00ec97)](https://testnet.nearblocks.io)
+[![near-sdk](https://img.shields.io/badge/near--sdk-5.17.2-000000)](https://crates.io/crates/near-sdk)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
+[![Hackathon](https://img.shields.io/badge/Indonesia%20Web3%20Hackathon-2026-orange)](#-hackathon-notes)
+
+Built for the **Indonesia Web3 Hackathon 2026 — Finance & Commerce track**.
+>>>>>>> c820f02574bd56a5bf1f66b258a16f40e2430af0
 
 ---
 
@@ -296,6 +309,7 @@ HOMR/
 
 ---
 
+<<<<<<< HEAD
 ## 🔎 Multiple-project disclosure
 
 The team behind HOMR also submitted **Auvora Finance** as a separate, independent project to NEAR HACKATHON. The projects use different repositories and address different products.
@@ -306,8 +320,14 @@ This disclosure is included in accordance with NEAR HACKATHON rule Q-015 for par
 
 ---
 
+=======
+>>>>>>> c820f02574bd56a5bf1f66b258a16f40e2430af0
 ## 📄 License
 
 MIT — see [LICENSE](./LICENSE).
 
+<<<<<<< HEAD
 <p align="center">Built for NEAR HACKATHON · NEAR Protocol</p>
+=======
+<p align="center">Built with ❤️ for the Indonesia Web3 Hackathon 2026 · NEAR Protocol</p>
+>>>>>>> c820f02574bd56a5bf1f66b258a16f40e2430af0

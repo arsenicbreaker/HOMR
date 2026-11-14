@@ -1,0 +1,9 @@
+VITE_API_URL="http://localhost:4000"
+
+
+# PASTIKAN ALAMAT DI BAWAH INI SUDAH BENAR
+VITE_HOUSING_VAULT_CONTRACT="housing-vault.funnylace8065.testnet"
+VITE_CREDIT_AUCTION_CONTRACT="credit-auction.funnylace8065.testnet"
+VITE_LOAN_MANAGER_CONTRACT="loan-manager.funnylace8065.testnet"
+VITE_AUDIT_CONTRACT="audit.funnylace8065.testnet"
+VITE_MOCK_TOKEN_CONTRACT="mock-token.funnylace8065.testnet"
