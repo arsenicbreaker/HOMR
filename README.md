@@ -13,207 +13,290 @@ HOMR connects stablecoin investors with property borrowers through a shared liqu
 | Network | NEAR Testnet |
 | Hackathon tracks | Unstoppable DeFi, Real-World Money |
 
-## The problem
+---
 
-Housing credit combines information that should not be public, such as borrower and property documents, with decisions that benefit from transparency, such as credit limits and capital allocation. Investors also need a clear record of where pooled capital goes and whether loans are repaid.
+## 📖 What is HOMR?
 
-HOMR separates those responsibilities:
+Housing finance in emerging markets is slow, opaque, and hard to audit. HOMR turns the whole credit lifecycle into transparent, composable on-chain primitives:
 
-- A credit manager reviews borrower and property information offchain.
-- The resulting account approval, property reference, and borrowing limit are recorded onchain.
-- Approved borrowers submit sealed commitments and later reveal their loan terms.
-- The auction contract selects the valid bid with the highest offered rate.
-- The loan manager requests funding from the shared vault and records the resulting loan lifecycle.
+- **Investors** deposit mock USDC (`mUSDC`) into a housing vault and receive `hvSHARE`, a NEP-141 share token priced against the vault's booked NAV.
+- **Borrowers** are vetted by the protocol operator, then bid for credit in a **commit-reveal auction** so no participant can front-run another's terms.
+- **Winning bids** are settled by the auction contract, which instructs the Loan Manager to issue the loan and the vault to disburse the principal.
+- **Every step** — borrower approval, bid commitment, loan origination, repayment — is written to an **Audit Registry** and emitted as a NEP-297 event, creating a replayable, tamper-evident credit history.
 
-## Product flow
+---
 
-### Investor
+## 🏗️ Architecture & Tech Stack
 
-1. Connect a NEAR Testnet wallet.
-2. Claim mock USDC from the testnet faucet.
-3. Deposit mock USDC into the Housing Credit Vault.
-4. Receive `hvSHARE` vault shares.
-5. Monitor available capital and funded loans from the dashboard.
-
-### Borrower
-
-1. Connect a NEAR Testnet wallet and submit a financing application.
-2. Wait for a credit manager to review the application offchain.
-3. After approval, commit a hashed bid during the commit phase.
-4. Reveal the amount, rate, term, and salt during the reveal phase.
-5. If selected when the auction is finalized, receive the testnet loan allocation and monitor its status.
-
-### Credit manager
-
-1. Review applications stored in the credit database.
-2. Grant an approved account a maximum principal and property reference onchain.
-3. Start and finalize auction cycles.
-4. Monitor revealed bids, issued loans, and audit events.
-
-## How NEAR is used
-
-HOMR uses NEAR for the parts of the workflow that need deterministic execution and public verification:
-
-- NEAR accounts and Wallet Selector authorize user actions.
-- Rust smart contracts manage vault deposits, shares, credit approvals, commit-reveal bids, loan issuance, and repayment records.
-- Cross-contract calls connect auction finalization, loan issuance, vault funding, and audit registration.
-- NEP-297-style `EVENT_JSON` logs provide structured events for offchain indexing.
-- NEP-413 signatures protect authenticated API actions without asking users to expose private keys.
-
-Sensitive application details remain in PostgreSQL. Only the approval result and property reference needed by the auction are moved onchain.
-
-## Architecture
-
-```mermaid
-flowchart LR
-    U[Investor, borrower, or credit manager] --> W[React application]
-    W --> S[NEAR Wallet Selector]
-    W --> A[Fastify API]
-    A --> P[(PostgreSQL)]
-    A --> R[NEAR RPC]
-
-    subgraph N[NEAR Testnet contracts]
-        M[Mock token]
-        V[Housing vault]
-        C[Credit auction]
-        L[Loan manager]
-        G[Audit registry]
-        M --> V
-        C --> L
-        L --> V
-        L --> G
-    end
-
-    S --> M
-    S --> V
-    S --> C
-    S --> L
-    S --> G
+```
+                    ┌──────────────────────────────┐
+                    │   React + Vite frontend      │
+                    │   Wallet Selector (testnet)  │
+                    └──────────────┬───────────────┘
+                         view calls││signed txs
+              ┌────────────────────┘└──────────────────┐
+              ▼                                        ▼
+   ┌─────────────────────┐                  ┌─────────────────────────┐
+   │  Fastify API        │                  │  NEAR Testnet contracts │
+   │  TypeScript/Prisma  │──── RPC view ───▶│                         │
+   │  faucet + read API  │                  │  mock-token (NEP-141)   │
+   └──────────┬──────────┘                  │  housing-vault (NEP-141)│
+              │ admin-signed mint           │  credit-auction         │
+              └────────────────────────────▶│  loan-manager           │
+                                            │  audit-registry (NEP-297)│
+                                            └─────────────────────────┘
 ```
 
-| Component | Responsibility |
-| --- | --- |
-| `contracts/mock_token` | Mock NEP-141 asset used by the testnet demo |
-| `contracts/housing_vault` | Accepts mock-token deposits, issues `hvSHARE`, tracks available capital, and funds loans |
-| `contracts/credit_auction` | Stores borrower approvals and runs the commit-reveal auction |
-| `contracts/loan_manager` | Creates loans, coordinates vault funding, and records repayment state |
-| `contracts/audit_registry` | Stores lookup records for auctions, loans, and repayments |
-| `contracts/common` | Shared commitment hashing, proof types, and event helpers |
-| `api` | Application review data, public reads, NEAR RPC integration, faucet route, and NEP-413 authentication |
-| `frontend` | Landing page and investor, borrower, credit-manager, and faucet interfaces |
+### Smart Contracts — Rust + `near-sdk` 5.17.2
 
-## Testnet deployment
+| Contract | Crate | Responsibility |
+| --- | --- | --- |
+| **Housing Vault** | `contracts/housing_vault` | NEP-141 `hvSHARE` vault with NAV tracking, deposit/withdraw, loan funding and repayment booking |
+| **Credit Auction** | `contracts/credit_auction` | Borrower allow-list, commit-reveal bidding, reveal verification, winner selection, loan trigger |
+| **Loan Manager** | `contracts/loan_manager` | Loan origination, repayment accounting, cross-contract funding and audit registration |
+| **Audit Registry** | `contracts/audit_registry` | Append-only auction/loan/repayment proofs with NEP-297 events |
+| **Mock Token** | `contracts/mock_token` | Test-only NEP-141 `mUSDC` with an owner-gated mint |
+| **Common** | `contracts/common` | Shared proof structs, commitment hashing and NEP-297 event helper |
 
-The frontend is configured for these NEAR Testnet accounts:
+The workspace enforces `overflow-checks = true`, LTO and `panic = "abort"` in release builds.
 
-| Contract | Account |
-| --- | --- |
-| Mock token | [`mock-token.funnylace8065.testnet`](https://testnet.nearblocks.io/address/mock-token.funnylace8065.testnet) |
-| Housing vault | [`housing-vault.funnylace8065.testnet`](https://testnet.nearblocks.io/address/housing-vault.funnylace8065.testnet) |
-| Credit auction | [`credit-auction.funnylace8065.testnet`](https://testnet.nearblocks.io/address/credit-auction.funnylace8065.testnet) |
-| Loan manager | [`loan-manager.funnylace8065.testnet`](https://testnet.nearblocks.io/address/loan-manager.funnylace8065.testnet) |
-| Audit registry | [`audit.funnylace8065.testnet`](https://testnet.nearblocks.io/address/audit.funnylace8065.testnet) |
+### Backend — Fastify + TypeScript + Prisma
 
-## Quick evaluation
+- **Fastify 4** HTTP API with helmet, CORS, zod-validated config.
+- **Prisma 5 / PostgreSQL** for indexed applications, loans, repayments and chain events (idempotent on `(receiptId, logIndex)`).
+- **`near-api-js` 5** for RPC view calls and for the admin-signed faucet mint.
+- **NEP-413** signature verification for admin actions.
+- **Indexer** (`api/src/chain/nearIndexer.ts`) that walks blocks → chunks → receipts and persists NEP-297 events.
 
-For a read-only review:
+### Frontend — React + Vite
 
-1. Open [homr.web.id](https://homr.web.id).
-2. Inspect the vault and active-loan panels on the landing page.
-3. Open each dashboard from **Open dashboard** to review the investor, borrower, and credit-manager workflows.
-4. Open the [faucet](https://homr.web.id/faucet) to inspect the mock-token claim flow.
-5. Follow the contract links above to verify the deployed accounts and transactions.
+- **React 19 + Vite 8**, React Router 7, TanStack Query.
+- **`@near-wallet-selector` 8.9** with **Meteor**, **MyNearWallet** and **Here Wallet** modules.
+- Motion + three.js for the animated landing experience.
+- Hand-built design system in `frontend/src/styles.css` (no CSS framework dependency).
 
-Submitting applications, approving credit, and advancing an auction require the appropriate connected account or contract role. The public interface still exposes the workflow and read-only state without those roles.
+### From EVM to NEAR
 
-## Run locally
+HOMR started life as a BNB Chain / Solidity prototype. The current codebase is a full rewrite around NEAR's account model and standards:
+
+| Concern | EVM prototype | NEAR implementation |
+| --- | --- | --- |
+| Token standard | ERC-20 | NEP-141 (`ft_transfer`, `ft_on_transfer`, `ft_balance_of`) |
+| Vault shares | ERC-4626-style shares | NEP-141 `hvSHARE` with booked NAV + virtual-offset inflation guard |
+| Events | Solidity `event` logs | NEP-297 `EVENT_JSON` logs (`homr_auction`, `homr_vault`, `homr_loan`, `homr_audit`) |
+| Wallet | wagmi / injected provider | `@near-wallet-selector` + `signAndSendTransaction` |
+| Transaction identity | `txHash` | `receiptId` + `predecessorId` + `blockHeight` |
+| Auth | `personal_sign` | NEP-413 message signatures |
+| Backend chain client | `viem` | `near-api-js` + raw JSON-RPC |
+
+Legacy EVM contracts, ABIs and the Hardhat faucet are kept under `legacy/` and `backend/` for reference only; nothing in `contracts/`, `api/` or `frontend/` imports them.
+
+---
+
+## ✨ Key Features
+
+### 🚰 Faucet — 1,000 mUSDC to try the protocol
+A signed backend endpoint mints **1,000 mUSDC** (6 decimals) straight to any valid testnet account. The faucet page ships with the app at `/faucet`; `GET /api/info` reports the drip size and token contract, `POST /api/claim-usdc` performs the mint with the admin key and returns the real transaction hash.
+
+### 🏦 Housing Vault — deposit mUSDC, mint `hvSHARE`
+Deposits are made with `ft_transfer_call` into the vault, which mints **NEP-141 `hvSHARE`** at the booked NAV. The vault tracks available capital and outstanding principal, and a 1e6/1e6 virtual seed pair closes the classic first-depositor donation attack. Withdrawals redeem shares for their proportional underlying via a self-callback.
+
+### 🔨 Credit Auction — commit, reveal, settle
+Only operator-approved borrowers can bid, and only within the vault's approved principal limit.
+
+1. `commit_bid(auction_id, commitment)` — hash of `(amount, rate_bps, term_days, salt, borrower)` plus a 0.01 NEAR anti-spam deposit.
+2. `reveal_bid(...)` — the contract recomputes the hash; mismatches are rejected and the commit deposit is refunded on a valid reveal.
+3. `finalize_auction(auction_id)` — after the reveal deadline, the highest-yield revealed bid wins, the auction calls `loan_manager.issue_loan`, the loan manager pulls principal from the vault, and the audit registry records the proof.
+
+### 🧾 Audit Registry — immutable credit proofs
+Auction registrations, loan origination and every repayment are stored with a SHA-256 proof hash and emitted as NEP-297 `homr_audit` events. Proofs are append-only, authorized to the operator and trusted callers, and readable through `get_auction`, `get_loan` and `get_repayments`.
+
+### 👀 Walletless demo / read-only mode
+Judges can explore the landing page and both dashboards without installing a wallet: vault, loan and event data stream from the API's live testnet reads, labelled `LIVE ONCHAIN`. The wallet selector is only required for state-changing actions (deposit, bid, repay, admin operations).
+
+---
+
+## 📜 Smart Contracts (NEAR Testnet)
+
+All contracts are deployed on **NEAR testnet**:
+
+| Contract | Account ID | Explorer |
+| --- | --- | --- |
+| 🏦 Housing Vault | `housing-vault.funnylace8065.testnet` | [view](https://testnet.nearblocks.io/address/housing-vault.funnylace8065.testnet) |
+| 🔨 Credit Auction | `credit-auction.funnylace8065.testnet` | [view](https://testnet.nearblocks.io/address/credit-auction.funnylace8065.testnet) |
+| 📄 Loan Manager | `loan-manager.funnylace8065.testnet` | [view](https://testnet.nearblocks.io/address/loan-manager.funnylace8065.testnet) |
+| 🧾 Audit Registry | `audit.funnylace8065.testnet` | [view](https://testnet.nearblocks.io/address/audit.funnylace8065.testnet) |
+| 🪙 Mock USDC | `mock-token.funnylace8065.testnet` | [view](https://testnet.nearblocks.io/address/mock-token.funnylace8065.testnet) |
+
+Contract IDs are wired in:
+
+- `frontend/src/contracts/addresses.js` — network, RPC (`https://test.rpc.fastnear.com`), account IDs and explorer.
+- `api/.env` — `VAULT_CONTRACT`, `AUCTION_CONTRACT`, `LOAN_MANAGER_CONTRACT`, `AUDIT_CONTRACT`, `TOKEN_CONTRACT`.
+
+### Build & test contracts
+
+```bash
+# from the repository root
+rustup target add wasm32-unknown-unknown
+cargo test --workspace          # unit tests for all five contracts
+
+# optimized WASM (requires: cargo install cargo-near)
+cargo near build
+```
+
+> **Windows note:** `near-sdk`'s test dependency `aws-lc-sys` needs **NASM** on `PATH`. Install it (e.g. `winget install NASM.NASM`) and open a fresh shell before running `cargo test`.
+
+---
+
+## 🚀 Local Development Setup
 
 ### Prerequisites
 
-- Node.js 20 or newer
-- npm
-- Rust stable with the `wasm32-unknown-unknown` target
-- PostgreSQL for the API
-- A NEAR Testnet account for wallet transactions
-
-### Frontend
+| Tool | Version | Notes |
+| --- | --- | --- |
+| **Node.js** | 20+ (tested on 26) | npm ships with it |
+| **Rust** | stable | plus the `wasm32-unknown-unknown` target for contracts |
+| **NASM** | 2.x | **Windows only** — required by `aws-lc-sys` for `cargo test` |
+| **PostgreSQL** | 14+ | local instance or a free Neon/Supabase database |
+| **NEAR CLI** | latest | only needed to deploy or inspect contracts |
 
 ```bash
-cd frontend
-cp .env.example .env
-npm ci
-npm run dev
+git clone https://github.com/arsenicbreaker/HOMR.git
+cd HOMR
 ```
 
-The Vite development server prints its local URL after startup.
-
-### API
+### 1️⃣ Backend API (`api/`)
 
 ```bash
 cd api
-cp .env.example .env
-npm ci
-npm run prisma:generate
-npm run prisma:deploy
-npm run dev
+npm install
+cp .env.example .env        # then edit the values below
+npx prisma generate
+npm run dev                 # http://localhost:4000
 ```
 
-Set `DATABASE_URL` and `DIRECT_URL` in `api/.env` before applying the Prisma migration. Private keys and database credentials must remain in local environment files.
+Required `api/.env` values:
 
-### Smart contracts
+```dotenv
+PORT=4000
+NODE_ENV=development
+DATABASE_URL=postgresql://user:password@host:5432/homr?sslmode=require
+DIRECT_URL=postgresql://user:password@host:5432/homr?sslmode=require
+CORS_ORIGIN=http://localhost:5173
+
+NEAR_NETWORK_ID=testnet
+NEAR_NODE_URL=https://rpc.testnet.near.org
+
+VAULT_CONTRACT=housing-vault.funnylace8065.testnet
+AUCTION_CONTRACT=credit-auction.funnylace8065.testnet
+LOAN_MANAGER_CONTRACT=loan-manager.funnylace8065.testnet
+AUDIT_CONTRACT=audit.funnylace8065.testnet
+TOKEN_CONTRACT=mock-token.funnylace8065.testnet
+
+ADMIN_ACCOUNT_ID=funnylace8065.testnet
+ADMIN_ACCOUNT_IDS=funnylace8065.testnet
+ADMIN_PRIVATE_KEY=ed25519:...      # or NEAR_PRIVATE_KEY
+ADMIN_API_KEY=change-me
+NEP413_RECIPIENT=homr-api.testnet
+```
+
+> ⚠️ The API reads `VAULT_CONTRACT`, `AUCTION_CONTRACT`, `LOAN_MANAGER_CONTRACT`, `AUDIT_CONTRACT` and `TOKEN_CONTRACT`. The legacy `*_CONTRACT_ID` names still present in `api/.env.example` are **not** read by `api/src/config.ts` — keep the names above.
+>
+> `ADMIN_PRIVATE_KEY` (or `NEAR_PRIVATE_KEY`) must be a full-access key registered on `ADMIN_ACCOUNT_ID`; it signs faucet mints. Without it the faucet returns an error rather than a simulated hash.
+
+Apply the database schema:
 
 ```bash
-rustup target add wasm32-unknown-unknown
-cargo test --workspace
-cargo build --workspace --target wasm32-unknown-unknown --release
+npm run prisma:deploy       # production / existing database
+# or: npm run prisma:migrate   # local development
 ```
 
-## Tests
+Useful endpoints once it is running:
 
-Run each suite from the repository root:
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/health` | Liveness + network |
+| `GET` | `/api/vault` | Live vault state from testnet |
+| `GET` | `/api/loans`, `/api/loans/:id` | Indexed loans |
+| `GET` | `/api/events?limit=50` | NEP-297 event feed |
+| `GET` | `/api/info` | Faucet metadata (`dripUsdc: "1000"`) |
+| `POST` | `/api/claim-usdc` | Mint 1,000 mUSDC to `{ "accountId": "you.testnet" }` |
+
+### 2️⃣ Frontend (`frontend/`)
 
 ```bash
-# Native NEAR contracts
+cd frontend
+npm install
+npm run dev                 # http://localhost:5173
+```
+
+Optional `frontend/.env`:
+
+```dotenv
+VITE_API_BASE=http://localhost:4000
+VITE_FAUCET_API_BASE=http://localhost:4000
+```
+
+With no `.env` file, Vite development already defaults to `http://localhost:4000`. In production builds it falls back to `https://api.homr.web.id`. Contract account IDs and the RPC endpoint live in `frontend/src/contracts/addresses.js`.
+
+Routes:
+
+- `/` — landing page with live vault stats
+- `/app/invest` — investor dashboard (deposit, withdraw, portfolio)
+- `/app/borrow` — borrower dashboard (applications, bids, loans)
+- `/app/admin` — operator console (approve borrowers, open/finalize auctions)
+- `/faucet` — claim 1,000 mUSDC
+
+### 3️⃣ Tests
+
+```bash
+# contracts (from repo root, NASM on PATH on Windows)
 cargo test --workspace
 
-# Frontend components and transaction construction
-cd frontend && npm ci && npm test
+# API
+cd api && npm test           # node:test via tsx
 
-# API validation, authentication, faucet, and CORS
-cd ../api && npm ci && npm test
+# frontend
+cd frontend && npm test      # vitest run
 ```
 
-The `backend` and `legacy` directories contain the earlier EVM implementation and its tests. They are retained to make the migration history reviewable, but the hackathon submission uses the native NEAR contracts in `contracts/`.
+---
 
-## Repository layout
+## 🗂️ Repository Layout
 
-```text
-.
-|-- contracts/        Native NEAR contracts written in Rust
-|-- api/              Fastify API, Prisma data layer, and NEAR integration
-|-- frontend/         React and Vite web application
-|-- backend/          Earlier EVM implementation and supporting tools
-|-- legacy/           Archived EVM contracts and migration artifacts
-|-- deploy/           Production configuration and read-only health check
-|-- Cargo.toml        Native contract workspace
-`-- LICENSE           MIT license
+```
+HOMR/
+├── contracts/               # Rust NEAR workspace
+│   ├── common/              # shared proofs, hashing, NEP-297 helper
+│   ├── housing_vault/       # NEP-141 vault + NAV
+│   ├── credit_auction/      # commit-reveal auctions
+│   ├── loan_manager/        # origination + repayments
+│   ├── audit_registry/      # immutable credit proofs
+│   └── mock_token/          # test mUSDC
+├── api/                     # Fastify + Prisma + near-api-js
+│   ├── src/chain/           # RPC, indexer, signer, NEP-297 decoder
+│   ├── src/routes/          # health, public, faucet, admin
+│   └── prisma/              # PostgreSQL schema
+├── frontend/                # React + Vite dApp
+│   └── src/                 # pages, components, NEAR wallet provider
+├── legacy/                  # EVM-era contracts, ABIs, scripts (reference)
+├── backend/                 # legacy Hardhat + faucet (reference)
+└── deploy/                  # legacy VPS deployment assets
 ```
 
-## Hackathon scope and prior work
+---
 
-HOMR began as an EVM and BNB Testnet prototype before the NEAR HACKATHON window. That baseline is preserved in `backend/` and `legacy/`.
+## 🎓 Hackathon Notes
 
-The hackathon submission is the NEAR implementation: the Rust contract workspace, NEAR Testnet deployments, Wallet Selector transaction flows, NEAR RPC and event handling, NEP-413 authentication, audit registry, and the connected investor, borrower, and credit-manager experience. Judges should evaluate the code in `contracts/`, the NEAR-specific code in `frontend/src/near/` and `api/src/chain/`, and their integration with the application.
+- **Indexer is disabled for the presentation.** `api/src/server.ts` starts with `startIndexer()` commented out to avoid draining the public testnet RPC quota while a live demo runs. The API logs `NEAR Indexer is DISABLED (presentation mode)` and keeps serving live vault reads through `nearRpc.ts`. Re-enable the two commented lines once you have a dedicated/archival RPC endpoint.
+- **Walletless demo.** The dashboards are fully browsable read-only: vault, loans and audit events are fetched from the API and labelled `LIVE ONCHAIN`, so judges can evaluate the protocol before creating a wallet. Transactions still go through the NEAR Wallet Selector (Meteor, MyNearWallet, Here Wallet).
+- **Testnet only.** `mUSDC` is a mock token with an owner-gated mint; no real funds are involved. `hvSHARE`, loan balances and audit proofs are testnet state.
+- **Demo flow for judges:** claim mUSDC at `/faucet` → deposit into the Housing Vault at `/app/invest` → watch the borrower dashboard commit and reveal a bid → the operator finalizes the auction → inspect the loan and its audit proof in the event feed.
+- **Known limitations:** the Prisma-backed event feed only advances while the indexer runs; the public testnet RPC is rate-limited; and admin actions require a NEP-413 signature or the `x-api-key` header in local development.
 
-## Current limitations
+---
 
-- The system runs on NEAR Testnet and uses mock USDC with no monetary value.
-- Credit and property review is an offchain administrative process, not automated underwriting.
-- Administrative actions require accounts configured with the relevant contract roles.
-- The hosted API currently pauses continuous event indexing to avoid exhausting the presentation RPC quota. Contract state remains directly verifiable on NEAR Testnet.
-- Production use would require legal, identity, collateral, oracle, servicing, and security work beyond this prototype.
-
-## Hackathon disclosure
+## 🔎 Multiple-project disclosure
 
 The team behind HOMR also submitted **Auvora Finance** as a separate, independent project to NEAR HACKATHON. The projects use different repositories and address different products.
 
@@ -221,6 +304,10 @@ The team behind HOMR also submitted **Auvora Finance** as a separate, independen
 
 This disclosure is included in accordance with NEAR HACKATHON rule Q-015 for participants submitting more than one independent project.
 
-## License
+---
 
-[MIT](LICENSE)
+## 📄 License
+
+MIT — see [LICENSE](./LICENSE).
+
+<p align="center">Built for NEAR HACKATHON · NEAR Protocol</p>
