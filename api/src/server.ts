@@ -6,7 +6,6 @@ import { logger } from "./lib/logger.js";
 import { healthRoutes } from "./routes/health.js";
 import { publicRoutes } from "./routes/public.js";
 import { adminRoutes } from "./routes/admin.js";
-import { demoRoutes } from "./routes/demo.js";
 import faucetRoutes from './routes/faucet.js';
 import { applicationRoutes } from "./modules/applications/routes.js";
 import { auctionRoutes } from "./modules/auctions/routes.js";
@@ -29,7 +28,6 @@ await app.register(publicRoutes, { prefix: "/api" });
 await app.register(applicationRoutes, { prefix: "/api" });
 await app.register(auctionRoutes, { prefix: "/api" });
 await app.register(adminRoutes, { prefix: "/api/admin" });
-await app.register(demoRoutes, { prefix: "/api" });
 // Served at /api/info + /api/claim-usdc, and mirrored under /faucet/api/* for
 // deployments whose faucet base URL points at the /faucet prefix.
 await app.register(faucetRoutes, { prefix: "/api" });

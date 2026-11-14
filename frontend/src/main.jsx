@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import './styles.css';
 
@@ -17,7 +17,6 @@ import BorderGlow from './components/ui/BorderGlow';
 import { StickyScroll } from './components/ui/sticky-scroll-reveal';
 import { API_BASE, fetchVault, fetchLoans, fetchEvents } from './api/client';
 import { CHAIN_CONFIG, NEAR_CONFIG } from './contracts/addresses';
-import DemoPage from './pages/DemoPage';
 
 const networkName = CHAIN_CONFIG.chainName;
 const networkLabel = networkName.replace(' Smart Chain', '').replace(' Testnet', '').toUpperCase();
@@ -448,10 +447,6 @@ export function App() {
             </a>
           </div>
           <p className="hero-disclosure">The native {nearNetworkName} credit contracts are {NEAR_CONFIG.contractId ? 'configured for proof lookups' : 'awaiting deployment'}. All allocation logic runs on NEAR.</p>
-          <div className="hero-demo-link">
-            <Link className="ghost-link" to="/demo">View the walletless demo <span aria-hidden="true">↗</span></Link>
-          </div>
-
           <HeroAppPreview />
 
           <div className="proof-strip" aria-label="Protocol status summary">
@@ -674,7 +669,7 @@ if (rootElement) {
               <Route path="/app/borrow" element={<DashboardEntry role="borrower"><BorrowerDashboard /></DashboardEntry>} />
               <Route path="/app/admin" element={<DashboardEntry role="admin"><AdminPanel /></DashboardEntry>} />
               <Route path="/faucet" element={<FaucetPage />} />
-              <Route path="/demo" element={<DemoPage />} />
+              <Route path="/demo" element={<Navigate to="/app/invest" replace />} />
             </Routes>
           </BrowserRouter>
         </TransactionProvider>

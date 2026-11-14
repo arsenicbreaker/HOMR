@@ -30,10 +30,6 @@ const schema = z.object({
     // NEP-413 `recipient` for admin signature challenges
     NEP413_RECIPIENT: z.string().default("homr-api"),
 
-    // Demo Signer (for Walletless Demo)
-    DEMO_SIGNER_ACCOUNT_ID: z.string().optional(),
-    DEMO_SIGNER_PRIVATE_KEY: z.string().optional(),
-
     // Indexer Configuration
     FINALITY_LAG: z.coerce.number().int().nonnegative().default(5),
     INDEXER_POLL_INTERVAL_MS: z.coerce.number().int().positive().default(10000),
