@@ -128,11 +128,12 @@ impl HomrHousingVault {
     /// A5 (NEP-141 ft_on_transfer): if storage is not registered, refund the full amount.
     /// Otherwise mint hvSHARE at nav_booked and return 0.
     #[payable]
+    #[allow(unused_variables)]
     pub fn ft_on_transfer(
         &mut self,
         sender_id: AccountId,
         amount: U128,
-        _msg: String,
+        msg: String,
     ) -> PromiseOrValue<U128> {
         require!(
             env::predecessor_account_id() == self.underlying_token,

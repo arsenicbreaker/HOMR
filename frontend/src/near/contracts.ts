@@ -1,10 +1,5 @@
 /**
  * Typed NEAR contract wrappers.
- *
- * Every write goes through the Wallet Selector's `signAndSendTransaction`
- * (NEP-413-free flow: the wallet signs the transaction itself), so the UI never
- * needs a private key. Read calls stay in `src/near/rpc.ts` helpers /
- * `src/contracts/protocol.js`.
  */
 import { CONTRACT_ADDRESSES, NEAR_CONFIG } from '../contracts/addresses';
 
@@ -12,19 +7,13 @@ export const TOKEN_DECIMALS = 6;
 export const SHARE_DECIMALS = 6;
 export const NAV_PRECISION = 1_000_000;
 
-/** 1 yoctoNEAR — required by NEP-141 / one-yocto guarded methods. */
 export const ONE_YOCTO = '1';
-/** 0.01 NEAR storage deposit required by `commit_bid`. */
 export const COMMIT_DEPOSIT = '10000000000000000000000';
-/** 1 NEAR storage deposit forwarded to `ft_on_transfer`. */
 export const STORAGE_DEPOSIT = '1000000000000000000000000';
 
 export const GAS = {
-  /** Simple state mutations (commit, reveal, finalize, approve, create). */
   simple: '30000000000000',
-  /** Cross-contract vault calls (`withdraw`, `fund_loan`, `record_repayment`). */
   crossContract: '150000000000000',
-  /** NEP-141 `ft_transfer_call` (token → vault `ft_on_transfer`). */
   ftTransferCall: '100000000000000',
 } as const;
 
@@ -34,13 +23,12 @@ export interface FunctionCallAction {
   type: 'FunctionCall';
   params: {
     methodName: string;
-    args: Record<string, unknown> | string; // Bisa berupa object (lama) atau string Base64 (baru)
+    args: Record<string, unknown>; // <--- KEMBALI KE OBJECT
     gas: string;
     deposit: string;
   };
 }
 
-/** Minimal surface of the Wallet Selector wallet we rely on. */
 export interface NearSigner {
   signAndSendTransaction(params: {
     receiverId: string;
@@ -53,7 +41,6 @@ export interface SignedTransaction {
   outcome: unknown;
 }
 
-/** Fixed-point string → raw integer string (6 decimals by default). */
 export function toRaw(value: Numeric, decimals: number = TOKEN_DECIMALS): string {
   const text = String(value).trim();
   if (!/^\d+(\.\d+)?$/.test(text)) {
@@ -68,7 +55,6 @@ export function toRaw(value: Numeric, decimals: number = TOKEN_DECIMALS): string
   return raw || '0';
 }
 
-/** Raw integer string → fixed-point display string, trailing zeros trimmed. */
 export function fromRaw(value: Numeric, decimals: number = TOKEN_DECIMALS): string {
   const raw = BigInt(String(value ?? '0')).toString().padStart(decimals + 1, '0');
   const whole = raw.slice(0, raw.length - decimals);
@@ -107,10 +93,6 @@ function toHex(bytes: Uint8Array): string {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-/**
- * Mirrors `homr_common::hash_commitment` exactly:
- * sha256(amount u128 BE || rate_bps u32 BE || term_days u32 BE || salt utf8 || account_id utf8)
- */
 export async function hashCommitment(input: {
   amount: Numeric;
   rateBps: number;
@@ -146,14 +128,6 @@ function extractTxHash(outcome: unknown): string {
   return '';
 }
 
-/**
- * Helper: Mengubah object arguments menjadi Base64 string.
- * Ini mencegah Wallet Selector membuang field kosong (seperti msg: '').
- */
-function encodeArgs(args: Record<string, unknown>): string {
-  return Buffer.from(JSON.stringify(args)).toString('base64');
-}
-
 async function call(
   signer: NearSigner,
   receiverId: string,
@@ -171,7 +145,7 @@ async function call(
         type: 'FunctionCall',
         params: {
           methodName,
-          args: encodeArgs(args), // <--- MENGGUNAKAN BASE64
+          args: args, // <--- KIRIM OBJECT LANGSUNG
           gas: options.gas || GAS.simple,
           deposit: options.deposit || '0',
         },
@@ -196,7 +170,7 @@ async function callMany(
       type: 'FunctionCall' as const,
       params: {
         methodName: entry.methodName,
-        args: encodeArgs(entry.args), // <--- MENGGUNAKAN BASE64
+        args: entry.args, // <--- KIRIM OBJECT LANGSUNG
         gas: entry.gas || GAS.simple,
         deposit: entry.deposit || '0',
       },
@@ -206,14 +180,6 @@ async function callMany(
   return { txHash: extractTxHash(outcome), outcome };
 }
 
-// ---------------------------------------------------------------------------
-// Vault (homr-housing-vault)
-// ---------------------------------------------------------------------------
-
-/**
- * Deposit underlying tokens: NEP-141 `ft_transfer_call` → vault `ft_on_transfer`,
- * which mints hvSHARE at the booked NAV.
- */
 export function deposit(signer: NearSigner, amount: Numeric): Promise<SignedTransaction> {
   return call(
     signer,
@@ -222,7 +188,8 @@ export function deposit(signer: NearSigner, amount: Numeric): Promise<SignedTran
     {
       receiver_id: CONTRACT_ADDRESSES.HousingCreditVault,
       amount: toRaw(amount),
-      msg: 'deposit', // <--- UBAH MENJADI 'deposit' AGAR TIDAK DIANGGAP KOSONG
+      msg: 'deposit',
+      _msg: 'deposit', // <--- TETAP GUNAKAN 'deposit'
     },
     { gas: GAS.ftTransferCall, deposit: STORAGE_DEPOSIT }
   );
@@ -238,10 +205,6 @@ export function withdraw(signer: NearSigner, shares: Numeric): Promise<SignedTra
   );
 }
 
-// ---------------------------------------------------------------------------
-// Credit auction (homr-credit-auction)
-// ---------------------------------------------------------------------------
-
 export function approveBorrower(
   signer: NearSigner,
   input: { borrower: string; maxPrincipal: Numeric; propertyHash: string }
@@ -255,7 +218,6 @@ export function approveBorrower(
   });
 }
 
-/** `create_auction` opens the auction and starts the commit phase in one call. */
 export function createAuction(
   signer: NearSigner,
   input: { commitDurationSeconds: Numeric; revealDurationSeconds: Numeric }
@@ -266,7 +228,6 @@ export function createAuction(
   });
 }
 
-/** `commit_bid` is payable: the contract requires >= 0.01 NEAR for storage. */
 export function commitBid(
   signer: NearSigner,
   input: { auctionId: Numeric; commitment: string }
@@ -306,7 +267,6 @@ export function revealBid(
   );
 }
 
-/** `finalize_auction` cross-calls `loan_manager.issue_loan`. */
 export function finalizeAuction(signer: NearSigner, auctionId: Numeric): Promise<SignedTransaction> {
   return call(
     signer,
@@ -317,11 +277,6 @@ export function finalizeAuction(signer: NearSigner, auctionId: Numeric): Promise
   );
 }
 
-// ---------------------------------------------------------------------------
-// Loan manager (homr-loan-manager)
-// ---------------------------------------------------------------------------
-
-/** `repay_loan` forwards principal accounting to the vault via `record_repayment`. */
 export function repayLoan(
   signer: NearSigner,
   input: { loanId: Numeric; amount: Numeric }
