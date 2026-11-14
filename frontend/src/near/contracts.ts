@@ -34,7 +34,7 @@ export interface FunctionCallAction {
   type: 'FunctionCall';
   params: {
     methodName: string;
-    args: Record<string, unknown>;
+    args: Record<string, unknown> | string; // Bisa berupa object (lama) atau string Base64 (baru)
     gas: string;
     deposit: string;
   };
@@ -146,6 +146,14 @@ function extractTxHash(outcome: unknown): string {
   return '';
 }
 
+/**
+ * Helper: Mengubah object arguments menjadi Base64 string.
+ * Ini mencegah Wallet Selector membuang field kosong (seperti msg: '').
+ */
+function encodeArgs(args: Record<string, unknown>): string {
+  return Buffer.from(JSON.stringify(args)).toString('base64');
+}
+
 async function call(
   signer: NearSigner,
   receiverId: string,
@@ -163,7 +171,7 @@ async function call(
         type: 'FunctionCall',
         params: {
           methodName,
-          args,
+          args: encodeArgs(args), // <--- MENGGUNAKAN BASE64
           gas: options.gas || GAS.simple,
           deposit: options.deposit || '0',
         },
@@ -188,7 +196,7 @@ async function callMany(
       type: 'FunctionCall' as const,
       params: {
         methodName: entry.methodName,
-        args: entry.args,
+        args: encodeArgs(entry.args), // <--- MENGGUNAKAN BASE64
         gas: entry.gas || GAS.simple,
         deposit: entry.deposit || '0',
       },
@@ -205,11 +213,6 @@ async function callMany(
 /**
  * Deposit underlying tokens: NEP-141 `ft_transfer_call` → vault `ft_on_transfer`,
  * which mints hvSHARE at the booked NAV.
- *
- * `mock_token::ft_transfer_call` forwards the attached deposit to
- * `ft_on_transfer`, and the vault only registers a deposit when it receives at
- * least 1 NEAR, so the storage deposit rides along with the transfer. The vault
- * refunds the token amount (not the NEAR) when storage is not registered.
  */
 export function deposit(signer: NearSigner, amount: Numeric): Promise<SignedTransaction> {
   return call(
@@ -219,7 +222,7 @@ export function deposit(signer: NearSigner, amount: Numeric): Promise<SignedTran
     {
       receiver_id: CONTRACT_ADDRESSES.HousingCreditVault,
       amount: toRaw(amount),
-      msg: '',
+      msg: 'deposit', // <--- UBAH MENJADI 'deposit' AGAR TIDAK DIANGGAP KOSONG
     },
     { gas: GAS.ftTransferCall, deposit: STORAGE_DEPOSIT }
   );
