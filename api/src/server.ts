@@ -34,6 +34,9 @@ await app.register(demoRoutes, { prefix: "/api" });
 // deployments whose faucet base URL points at the /faucet prefix.
 await app.register(faucetRoutes, { prefix: "/api" });
 await app.register(faucetRoutes, { prefix: "/faucet" });
+// Compatibility alias for older frontend builds that use
+// VITE_FAUCET_API_BASE=https://api.homr.web.id/faucet and append /api/*.
+await app.register(faucetRoutes, { prefix: "/faucet/api" });
 
 // TEMPORARILY DISABLED for presentation – prevents Indexer from draining RPC quota
 // startIndexer().catch((err) => logger.error("NEAR Indexer crashed", err));
