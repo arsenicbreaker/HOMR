@@ -35,7 +35,9 @@ await app.register(demoRoutes, { prefix: "/api" });
 await app.register(faucetRoutes, { prefix: "/api" });
 await app.register(faucetRoutes, { prefix: "/faucet" });
 
-startIndexer().catch((err) => logger.error("NEAR Indexer crashed", err));
+// TEMPORARILY DISABLED for presentation – prevents Indexer from draining RPC quota
+// startIndexer().catch((err) => logger.error("NEAR Indexer crashed", err));
+logger.info("NEAR Indexer is DISABLED (presentation mode)");
 
 try {
     await app.listen({ port: config.PORT, host: "0.0.0.0" });

@@ -102,25 +102,41 @@ export async function processEvent(event: Nep297Event, ctx: EventContext): Promi
 // NEAR RPC plumbing
 // ---------------------------------------------------------------------------
 
-async function rpcCall<T>(method: string, params: Record<string, unknown>): Promise<T> {
-    const res = await fetch(config.NEAR_NODE_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jsonrpc: "2.0", id: "homr-indexer", method, params }),
-        signal: AbortSignal.timeout(15_000),
-    });
-    if (!res.ok) {
-        throw new Error(`NEAR RPC HTTP ${res.status} ${res.statusText} (${method})`);
+async function rpcCall<T>(method: string, params: Record<string, unknown>, retries = 4): Promise<T> {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        // Beri jeda 350ms sebelum setiap request agar tidak menabrak rate limit
+        await delay(350);
+
+        const res = await fetch(config.NEAR_NODE_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ jsonrpc: "2.0", id: "homr-indexer", method, params }),
+            signal: AbortSignal.timeout(15_000),
+        });
+
+        // Jika kena HTTP 429 (Rate Limit), tunggu lebih lama lalu coba ulang otomatis
+        if (res.status === 429 && attempt < retries) {
+            const backoff = attempt * 2000;
+            logger.warn(`NEAR RPC 429 rate limit (${method}), retrying in ${backoff}ms...`);
+            await delay(backoff);
+            continue;
+        }
+
+        if (!res.ok) {
+            throw new Error(`NEAR RPC HTTP ${res.status} ${res.statusText} (${method})`);
+        }
+        const body = (await res.json()) as { result?: T; error?: { message?: string } };
+        if (body.error) {
+            throw new Error(`NEAR RPC error (${method}): ${body.error.message || "unknown"}`);
+        }
+        if (body.result === undefined) {
+            throw new Error(`NEAR RPC returned no result (${method})`);
+        }
+        return body.result;
     }
-    const body = (await res.json()) as { result?: T; error?: { message?: string } };
-    if (body.error) {
-        throw new Error(`NEAR RPC error (${method}): ${body.error.message || "unknown"}`);
-    }
-    if (body.result === undefined) {
-        throw new Error(`NEAR RPC returned no result (${method})`);
-    }
-    return body.result;
+    throw new Error(`NEAR RPC failed after ${retries} retries (${method})`);
 }
+
 
 interface RpcBlockHeader { height: number; hash: string; }
 interface RpcBlock { header: RpcBlockHeader; chunks: { chunk_hash: string; shard_id: number }[]; }
